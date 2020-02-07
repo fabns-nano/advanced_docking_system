@@ -148,6 +148,7 @@ DockManagerPrivate::DockManagerPrivate(CDockManager* _public) :
 //============================================================================
 void DockManagerPrivate::loadStylesheet()
 {
+	Q_INIT_RESOURCE(ads);
 	QString Result;
 #ifdef Q_OS_LINUX
     QFile StyleSheetFile(":ads/stylesheets/default_linux.css");

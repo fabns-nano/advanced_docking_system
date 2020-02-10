@@ -55,6 +55,10 @@
 #include "DockingStateReader.h"
 
 
+void initalizeResources()
+{
+	Q_INIT_RESOURCE(ads);
+}
 
 namespace ads
 {
@@ -148,7 +152,7 @@ DockManagerPrivate::DockManagerPrivate(CDockManager* _public) :
 //============================================================================
 void DockManagerPrivate::loadStylesheet()
 {
-	Q_INIT_RESOURCE(ads);
+  initalizeResources();
 	QString Result;
 #ifdef Q_OS_LINUX
     QFile StyleSheetFile(":ads/stylesheets/default_linux.css");

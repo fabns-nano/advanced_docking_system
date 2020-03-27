@@ -62,7 +62,7 @@ void initalizeResources()
 
 namespace ads
 {
-static CDockManager::ConfigFlags StaticConfigFlags = CDockManager::DefaultConfig;
+static CDockManager::ConfigFlags StaticConfigFlags = CDockManager::DefaultNonOpaqueConfig;
 
 /**
  * Private data class of CDockManager class (pimpl)
@@ -416,7 +416,7 @@ CDockManager::CDockManager(QWidget *parent) :
 	d(new DockManagerPrivate(this))
 {
 	createRootSplitter();
-	QMainWindow* MainWindow = dynamic_cast<QMainWindow*>(parent);
+	QMainWindow* MainWindow = qobject_cast<QMainWindow*>(parent);
 	if (MainWindow)
 	{
 		MainWindow->setCentralWidget(this);
@@ -445,6 +445,7 @@ CDockManager::~CDockManager()
 void CDockManager::registerFloatingWidget(CFloatingDockContainer* FloatingWidget)
 {
 	d->FloatingWidgets.append(FloatingWidget);
+	emit floatingWidgetCreated(FloatingWidget);
     ADS_PRINT("d->FloatingWidgets.count() " << d->FloatingWidgets.count());
 }
 
@@ -782,6 +783,10 @@ QAction* CDockManager::addToggleViewActionToMenu(QAction* ToggleViewAction,
 			d->addActionToMenu(GroupMenu->menuAction(), d->ViewMenu, AlphabeticallySorted);
 			d->ViewMenuGroups.insert(Group, GroupMenu);
 		}
+		else if (GroupMenu->icon().isNull() && !GroupIcon.isNull())
+		{
+			GroupMenu->setIcon(GroupIcon);
+		}
 
 		d->addActionToMenu(ToggleViewAction, GroupMenu, AlphabeticallySorted);
 		return GroupMenu->menuAction();
@@ -840,6 +845,12 @@ void CDockManager::setConfigFlags(const ConfigFlags Flags)
 void CDockManager::setConfigFlag(eConfigFlag Flag, bool On)
 {
 	internal::setFlag(StaticConfigFlags, Flag, On);
+}
+
+//===========================================================================
+bool CDockManager::testConfigFlag(eConfigFlag Flag)
+{
+    return configFlags().testFlag(Flag);
 }
 
 

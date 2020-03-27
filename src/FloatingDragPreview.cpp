@@ -40,6 +40,7 @@ struct FloatingDragPreviewPrivate
 	qreal WindowOpacity;
 	bool Hidden = false;
 	QPixmap ContentPreviewPixmap;
+	bool Canceled = false;
 
 
 	/**
@@ -59,6 +60,7 @@ struct FloatingDragPreviewPrivate
 	 */
 	void cancelDragging()
 	{
+		Canceled = true;
 		emit _this->draggingCanceled();
 		DockManager->containerOverlay()->hideOverlay();
 		DockManager->dockAreaOverlay()->hideOverlay();
@@ -84,11 +86,6 @@ void FloatingDragPreviewPrivate::updateDropOverlays(const QPoint &GlobalPos)
 		{
 			continue;
 		}
-
-		/*if (DockContainer == ContainerWidget)
-		{
-			continue;
-		}*/
 
 		QPoint MappedPos = ContainerWidget->mapFromGlobal(GlobalPos);
 		if (ContainerWidget->rect().contains(MappedPos))
@@ -127,7 +124,7 @@ void FloatingDragPreviewPrivate::updateDropOverlays(const QPoint &GlobalPos)
 	{
 		DockAreaOverlay->enableDropPreview(true);
 		DockAreaOverlay->setAllowedAreas(
-		    (VisibleDockAreas == 1) ? NoDockWidgetArea : AllDockAreas);
+		    (VisibleDockAreas == 1) ? NoDockWidgetArea : DockArea->allowedAreas());
 		DockWidgetArea Area = DockAreaOverlay->showOverlay(DockArea);
 
 		// A CenterDockWidgetArea for the dockAreaOverlay() indicates that
@@ -148,6 +145,14 @@ void FloatingDragPreviewPrivate::updateDropOverlays(const QPoint &GlobalPos)
 	else
 	{
 		DockAreaOverlay->hideOverlay();
+		// If there is only one single visible dock area in a container, then
+		// it does not make sense to show a dock overlay because the dock area
+		// would be removed and inserted at the same position
+		if (VisibleDockAreas <= 1)
+		{
+			ContainerOverlay->hide();
+		}
+
 		if (DockArea == ContentSourceArea && InvalidDockWidgetArea == ContainerDropArea)
 		{
 			DropContainer = nullptr;
@@ -207,12 +212,9 @@ CFloatingDragPreview::CFloatingDragPreview(QWidget* Content, QWidget* parent) :
 	connect(qApp, SIGNAL(applicationStateChanged(Qt::ApplicationState)),
 		SLOT(onApplicationStateChanged(Qt::ApplicationState)));
 
-#ifdef Q_OS_LINUX
-    // In Windows this widget directly receives the escape key press events
-    // in Linux we need to install an event filter for the given Content
-    // widget to receive the escape key press
-    Content->installEventFilter(this);
-#endif
+	// The only safe way to receive escape key presses is to install an event
+	// filter for the application object
+	qApp->installEventFilter(this);
 }
 
 
@@ -284,35 +286,46 @@ void CFloatingDragPreview::moveEvent(QMoveEvent *event)
 void CFloatingDragPreview::finishDragging()
 {
 	ADS_PRINT("CFloatingDragPreview::finishDragging");
-	auto DockDropArea = d->DockManager->dockAreaOverlay()->dropAreaUnderCursor();
-	auto ContainerDropArea = d->DockManager->containerOverlay()->dropAreaUnderCursor();
-	bool DropPossible = (DockDropArea != InvalidDockWidgetArea) || (ContainerDropArea != InvalidDockWidgetArea);
-	if (d->DropContainer && DropPossible)
+	auto DockDropArea = d->DockManager->dockAreaOverlay()->visibleDropAreaUnderCursor();
+	auto ContainerDropArea = d->DockManager->containerOverlay()->visibleDropAreaUnderCursor();
+	if (d->DropContainer && (DockDropArea != InvalidDockWidgetArea))
 	{
-		d->DropContainer->dropWidget(d->Content, QCursor::pos());
+		d->DropContainer->dropWidget(d->Content, DockDropArea, d->DropContainer->dockAreaAt(QCursor::pos()));
+	}
+	else if (d->DropContainer && (ContainerDropArea != InvalidDockWidgetArea))
+	{
+		d->DropContainer->dropWidget(d->Content, ContainerDropArea, nullptr);
 	}
 	else
 	{
 		CDockWidget* DockWidget = qobject_cast<CDockWidget*>(d->Content);
-		CFloatingDockContainer* FloatingWidget;
-		if (DockWidget)
+		CFloatingDockContainer* FloatingWidget = nullptr;
+
+		if (DockWidget && DockWidget->features().testFlag(CDockWidget::DockWidgetFloatable))
 		{
 			FloatingWidget = new CFloatingDockContainer(DockWidget);
 		}
 		else
 		{
 			CDockAreaWidget* DockArea = qobject_cast<CDockAreaWidget*>(d->Content);
-			FloatingWidget = new CFloatingDockContainer(DockArea);
+			if (DockArea->features().testFlag(CDockWidget::DockWidgetFloatable))
+			{
+				FloatingWidget = new CFloatingDockContainer(DockArea);
+			}
 		}
-		FloatingWidget->setGeometry(this->geometry());
-		FloatingWidget->show();
-		if (!CDockManager::configFlags().testFlag(CDockManager::DragPreviewHasWindowFrame))
+
+		if (FloatingWidget)
 		{
-			QApplication::processEvents();
-			int FrameHeight = FloatingWidget->frameGeometry().height() - FloatingWidget->geometry().height();
-			QRect FixedGeometry = this->geometry();
-			FixedGeometry.adjust(0, FrameHeight, 0, 0);
-			FloatingWidget->setGeometry(FixedGeometry);
+			FloatingWidget->setGeometry(this->geometry());
+			FloatingWidget->show();
+			if (!CDockManager::configFlags().testFlag(CDockManager::DragPreviewHasWindowFrame))
+			{
+				QApplication::processEvents();
+				int FrameHeight = FloatingWidget->frameGeometry().height() - FloatingWidget->geometry().height();
+				QRect FixedGeometry = this->geometry();
+				FixedGeometry.adjust(0, FrameHeight, 0, 0);
+				FloatingWidget->setGeometry(FixedGeometry);
+			}
 		}
 	}
 
@@ -355,18 +368,6 @@ void CFloatingDragPreview::paintEvent(QPaintEvent* event)
 	}
 }
 
-
-//============================================================================
-void CFloatingDragPreview::keyPressEvent(QKeyEvent *event)
-{
-	Super::keyPressEvent(event);
-	if (event->key() == Qt::Key_Escape)
-	{
-		d->cancelDragging();
-	}
-}
-
-
 //============================================================================
 void CFloatingDragPreview::onApplicationStateChanged(Qt::ApplicationState state)
 {
@@ -383,19 +384,18 @@ void CFloatingDragPreview::onApplicationStateChanged(Qt::ApplicationState state)
 bool CFloatingDragPreview::eventFilter(QObject *watched, QEvent *event)
 {
 	Q_UNUSED(watched);
-    if (event->type() == QEvent::KeyPress)
+    if (!d->Canceled && event->type() == QEvent::KeyPress)
     {
         QKeyEvent* e = static_cast<QKeyEvent*>(event);
         if (e->key() == Qt::Key_Escape)
         {
-            d->Content->removeEventFilter(this);
+            watched->removeEventFilter(this);
             d->cancelDragging();
         }
     }
 
     return false;
 }
-
 
 
 

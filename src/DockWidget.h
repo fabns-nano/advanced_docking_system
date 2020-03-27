@@ -74,6 +74,7 @@ protected:
     friend class CDockAreaTabBar;
     friend class CDockWidgetTab;
     friend struct DockWidgetTabPrivate;
+    friend struct DockAreaTitleBarPrivate;
 
     /**
      * Assigns the dock manager that manages this dock widget
@@ -345,13 +346,10 @@ public:
     QIcon icon() const;
 
     /**
-     * If the WithToolBar layout flag is enabled, then this function returns
-     * the dock widget toolbar. If the flag is disabled, the function returns
-     * a nullptr.
      * This function returns the dock widget top tool bar.
      * If no toolbar is assigned, this function returns nullptr. To get a vaild
      * toolbar you either need to create a default empty toolbar via
-     * createDefaultToolBar() function or you need to assign you custom
+     * createDefaultToolBar() function or you need to assign your custom
      * toolbar via setToolBar().
      */
     QToolBar* toolBar() const;
@@ -400,6 +398,22 @@ public:
      * \see setToolBarIconSize()
      */
     QSize toolBarIconSize(eState State) const;
+
+    /**
+     * Set the actions that will be shown in the dock area title bar
+     * if this dock widget is the active tab.
+     * You should not add to many actions to the title bar, because this
+     * will remove the available space for the tabs. If you have a number
+     * of actions, just add an action with a menu to show a popup menu
+     * button in the title bar.
+     */
+    void setTitleBarActions(QList<QAction*> actions);
+
+    /**
+     * Returns a list of actions that will be inserted into the dock area title
+     * bar if this dock widget becomes the current widget
+     */
+    virtual QList<QAction*> titleBarActions() const;
 
 
 #ifndef QT_NO_TOOLTIP

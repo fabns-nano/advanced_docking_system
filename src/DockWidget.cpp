@@ -54,6 +54,7 @@
 #include "DockManager.h"
 #include "FloatingDockContainer.h"
 #include "DockSplitter.h"
+#include "DockComponentsFactory.h"
 #include "ads_globals.h"
 
 
@@ -80,6 +81,7 @@ struct DockWidgetPrivate
 	QSize ToolBarIconSizeDocked = QSize(16, 16);
 	QSize ToolBarIconSizeFloating = QSize(24, 24);
 	bool IsFloatingTopLevel = false;
+	QList<QAction*> TitleBarActions;
 
 	/**
 	 * Private data constructor
@@ -171,6 +173,12 @@ void DockWidgetPrivate::updateParentDockArea()
 		return;
 	}
 
+	// we don't need to change the current tab if the
+	// current dock widget is not the one being closed
+	if (DockArea->currentDockWidget() != _this){
+		return;
+	}
+
 	auto NextDockWidget = DockArea->nextOpenDockWidget(_this);
 	if (NextDockWidget)
 	{
@@ -219,7 +227,7 @@ CDockWidget::CDockWidget(const QString &title, QWidget *parent) :
 	setWindowTitle(title);
 	setObjectName(title);
 
-	d->TabWidget = new CDockWidgetTab(this);
+	d->TabWidget = componentsFactory()->createDockWidgetTab(this);
     d->ToggleViewAction = new QAction(title, this);
 	d->ToggleViewAction->setCheckable(true);
 	connect(d->ToggleViewAction, SIGNAL(triggered(bool)), this,
@@ -807,6 +815,7 @@ bool CDockWidget::closeDockWidgetInternal(bool ForceClose)
 			}
 		}
 		deleteDockWidget();
+		emit closed();
     }
     else
     {
@@ -814,6 +823,20 @@ bool CDockWidget::closeDockWidgetInternal(bool ForceClose)
     }
 
 	return true;
+}
+
+
+//============================================================================
+void CDockWidget::setTitleBarActions(QList<QAction*> actions)
+{
+	d->TitleBarActions = actions;
+}
+
+
+//============================================================================
+QList<QAction*> CDockWidget::titleBarActions() const
+{
+	return d->TitleBarActions;
 }
 
 

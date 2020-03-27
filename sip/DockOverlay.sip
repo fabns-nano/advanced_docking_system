@@ -24,9 +24,11 @@ public:
 	void setAllowedAreas(ads::DockWidgetAreas areas);
 	ads::DockWidgetAreas allowedAreas() const;
 	ads::DockWidgetArea dropAreaUnderCursor() const;
+    ads::DockWidgetArea visibleDropAreaUnderCursor() const;
 	ads::DockWidgetArea showOverlay(QWidget* target);
 	void hideOverlay();
 	void enableDropPreview(bool Enable);
+    bool dropPreviewEnabled() const;
 	QRect dropOverlayRect() const;
 	virtual bool event(QEvent *e);
 
@@ -58,6 +60,8 @@ protected:
     void setIconOverlayColor(const QColor& Color);
     void setIconArrowColor(const QColor& Color);
     void setIconShadowColor(const QColor& Color);
+    virtual void showEvent(QShowEvent* e);
+    void setAreaWidgets(const QHash<ads::DockWidgetArea, QWidget*>& widgets);
 
 public:
 	CDockOverlayCross(ads::CDockOverlay* overlay /TransferThis/);

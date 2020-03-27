@@ -44,6 +44,7 @@ struct DockAreaWidgetPrivate;
 class CDockManager;
 class CDockContainerWidget;
 class DockContainerWidgetPrivate;
+class CDockAreaTitleBar;
 
 
 /**
@@ -253,6 +254,21 @@ public:
 	 * Update the close button if visibility changed
 	 */
 	virtual void setVisible(bool Visible) override;
+
+	/**
+	 * Configures the areas of this particular dock area that are allowed for docking
+	 */
+	void setAllowedAreas(DockWidgetAreas areas);
+
+	/**
+	 * Returns flags with all allowed drop areas of this particular dock area
+	 */
+	DockWidgetAreas allowedAreas() const;
+
+	/**
+	 * Returns the title bar of this dock area
+	 */
+	CDockAreaTitleBar* titleBar() const;
 
 public slots:
 	/**

@@ -30,18 +30,11 @@
 //============================================================================
 //                                   INCLUDES
 //============================================================================
-#include <ads_globals.h>
-#include <DockContainerWidget.h>
-#include <DockWidget.h>
-#include <FloatingDockContainer.h>
-#include <qbytearray.h>
-#include <qflags.h>
-#include <qlist.h>
-#include <qmap.h>
-#include <qobjectdefs.h>
-#include <qstring.h>
-#include <qstringlist.h>
-#include <QtGui/qicon.h>
+#include "ads_globals.h"
+#include "DockContainerWidget.h"
+#include "DockWidget.h"
+#include "FloatingDockContainer.h"
+
 
 class QSettings;
 class QMenu;
@@ -59,6 +52,7 @@ class CDockWidgetTab;
 struct DockWidgetTabPrivate;
 struct DockAreaWidgetPrivate;
 class CIconProvider;
+class CDockComponentsFactory;
 
 /**
  * The central dock manager that maintains the complete docking system.
@@ -88,6 +82,7 @@ private:
 	friend struct DockWidgetTabPrivate;
 	friend class CFloatingDragPreview;
 	friend struct FloatingDragPreviewPrivate;
+	friend class CDockAreaTitleBar;
 
 protected:
 	/**
@@ -140,12 +135,13 @@ public:
 	/**
 	 * These global configuration flags configure some global dock manager
 	 * settings.
+	 * Set the dock manager flags, before you create the dock manager instance.
 	 */
 	enum eConfigFlag
 	{
 		ActiveTabHasCloseButton = 0x0001,    //!< If this flag is set, the active tab in a tab area has a close button
 		DockAreaHasCloseButton = 0x0002,     //!< If the flag is set each dock area has a close button
-		DockAreaCloseButtonClosesTab = 0x0004,//!< If the flag is set, the dock area close button closes the active tab, if not set, it closes the complete cock area
+		DockAreaCloseButtonClosesTab = 0x0004,//!< If the flag is set, the dock area close button closes the active tab, if not set, it closes the complete dock area
 		OpaqueSplitterResize = 0x0008, //!< See QSplitter::setOpaqueResize() documentation
 		XmlAutoFormattingEnabled = 0x0010,//!< If enabled, the XML writer automatically adds line-breaks and indentation to empty sections between elements (ignorable whitespace).
 		XmlCompressionEnabled = 0x0020,//!< If enabled, the XML output will be compressed and is not human readable anymore
@@ -156,19 +152,32 @@ public:
 		DragPreviewIsDynamic = 0x0400,///< If opaque undocking is disabled, this flag defines the behavior of the drag preview window, if this flag is enabled, the preview will be adjusted dynamically to the drop area
 		DragPreviewShowsContentPixmap = 0x0800,///< If opaque undocking is disabled, the created drag preview window shows a copy of the content of the dock widget / dock are that is dragged
 		DragPreviewHasWindowFrame = 0x1000,///< If opaque undocking is disabled, then this flag configures if the drag preview is frameless or looks like a real window
-		DefaultConfig = ActiveTabHasCloseButton
-		              | DockAreaHasCloseButton
-		              | OpaqueSplitterResize
-		              | XmlCompressionEnabled
-		              | OpaqueUndocking, ///< the default configuration
-		DefaultNonOpaqueConfig = ActiveTabHasCloseButton
-		              | DockAreaHasCloseButton
-		              | XmlCompressionEnabled
+		AlwaysShowTabs = 0x2000,///< If this option is enabled, the tab of a dock widget is always displayed - even if it is the only visible dock widget in a floating widget.
+		DockAreaHasUndockButton = 0x4000,     //!< If the flag is set each dock area has an undock button
+		DockAreaHasTabsMenuButton = 0x8000,     //!< If the flag is set each dock area has a tabs menu button
+		DockAreaHideDisabledButtons = 0x10000,    //!< If the flag is set disabled dock area buttons will not appear on the tollbar at all (enabling them will bring them back)
+		DockAreaDynamicTabsMenuButtonVisibility = 0x20000,     //!< If the flag is set dock area will disable a tabs menu button when there is only one tab in the area
+		FloatingContainerHasWidgetTitle = 0x40000,
+		FloatingContainerHasWidgetIcon = 0x80000,
+
+
+        DefaultDockAreaButtons = DockAreaHasCloseButton
+							   | DockAreaHasUndockButton
+		                       | DockAreaHasTabsMenuButton,///< default configuration of dock area title bar buttons
+
+		DefaultBaseConfig = DefaultDockAreaButtons
+		                  | ActiveTabHasCloseButton
+		                  | XmlCompressionEnabled
+		                  | FloatingContainerHasWidgetTitle,///< default base configuration settings
+
+        DefaultOpaqueConfig = DefaultBaseConfig
+		                    | OpaqueSplitterResize
+		                    | OpaqueUndocking, ///< the default configuration with opaque operations - this may cause issues if ActiveX or Qt 3D windows are involved
+
+		DefaultNonOpaqueConfig = DefaultBaseConfig
 		              | DragPreviewShowsContentPixmap, ///< the default configuration for non opaque operations
-		NonOpaqueWithWindowFrame = ActiveTabHasCloseButton
-		              | DockAreaHasCloseButton
-		              | XmlCompressionEnabled
-		              | DragPreviewShowsContentPixmap
+
+		NonOpaqueWithWindowFrame = DefaultNonOpaqueConfig
 		              | DragPreviewHasWindowFrame ///< the default configuration for non opaque operations that show a real window with frame
 	};
 	Q_DECLARE_FLAGS(ConfigFlags, eConfigFlag)
@@ -180,12 +189,12 @@ public:
 	 * Before you create any dock widgets, you should properly setup the
 	 * configuration flags via setConfigFlags().
 	 */
-	CDockManager(QWidget* parent = 0);
+	CDockManager(QWidget* parent = nullptr);
 
 	/**
 	 * Virtual Destructor
 	 */
-	virtual ~CDockManager();
+	virtual ~CDockManager() override;
 
 	/**
 	 * This function returns the global configuration flags
@@ -194,14 +203,21 @@ public:
 
 	/**
 	 * Sets the global configuration flags for the whole docking system.
-	 * Call this function before you create your first dock widget.
+	 * Call this function before you create the dock manager and before
+	 * your create the first dock widget.
 	 */
 	static void setConfigFlags(const ConfigFlags Flags);
 
 	/**
-	 * Set a certain config flag
+	 * Set a certain config flag.
+	 * \see setConfigFlags()
 	 */
 	static void setConfigFlag(eConfigFlag Flag, bool On = true);
+
+	/**
+	 * Returns true if the given config flag is set
+	 */
+	static bool testConfigFlag(eConfigFlag Flag);
 
 	/**
 	 * Returns the global icon provider.
@@ -281,7 +297,7 @@ public:
 	 * This function always return 0 because the main window is always behind
 	 * any floating widget
 	 */
-	virtual unsigned int zOrderIndex() const override;
+	unsigned int zOrderIndex() const override;
 
 	/**
 	 * Saves the current state of the dockmanger and all its dock widgets
@@ -430,9 +446,16 @@ signals:
 
     /**
      * This signal is emitted if the dock manager finished opening a
-     * perspective
+     * perspective.
      */
     void perspectiveOpened(const QString& PerspectiveName);
+
+	/**
+	 * This signal is emitted, if a new floating widget has been created.
+	 * An application can use this signal to e.g. subscribe to events of
+	 * the newly created window.
+	 */
+	void floatingWidgetCreated(CFloatingDockContainer* FloatingWidget);
 
     /**
      * This signal is emitted, if a new DockArea has been created.

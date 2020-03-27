@@ -334,7 +334,7 @@ eDropMode DockContainerWidgetPrivate::getDropMode(const QPoint& TargetPos)
 	if (DockArea)
 	{
 		auto dropOverlay = DockManager->dockAreaOverlay();
-		dropOverlay->setAllowedAreas(AllDockAreas);
+		dropOverlay->setAllowedAreas(DockArea->allowedAreas());
 		dropArea = dropOverlay->showOverlay(DockArea);
 		if (ContainerDropArea != InvalidDockWidgetArea &&
 			ContainerDropArea != dropArea)
@@ -679,6 +679,23 @@ void DockContainerWidgetPrivate::moveToContainer(QWidget* Widget, DockWidgetArea
 	}
 	else
 	{
+		// We check, if we insert the dropped widget into the same place that
+		// it already has and do nothing, if it is the same place. It would
+		// also work without this check, but it looks nicer with the check
+		// because there will be no layout updates
+		auto Splitter = internal::findParent<CDockSplitter*>(DroppedDockArea);
+		auto InsertParam = internal::dockAreaInsertParameters(area);
+		if (Splitter == RootSplitter && InsertParam.orientation() == Splitter->orientation())
+		{
+			if (InsertParam.append() && Splitter->lastWidget() == DroppedDockArea)
+			{
+				return;
+			}
+			else if (!InsertParam.append() && Splitter->firstWidget() == DroppedDockArea)
+			{
+				return;
+			}
+		}
 		DroppedDockArea->dockContainer()->removeDockArea(DroppedDockArea);
 		NewDockArea = DroppedDockArea;
 	}
@@ -736,7 +753,7 @@ void DockContainerWidgetPrivate::appendDockAreas(const QList<CDockAreaWidget*> N
 //============================================================================
 void DockContainerWidgetPrivate::saveChildNodesState(QXmlStreamWriter& s, QWidget* Widget)
 {
-	QSplitter* Splitter = dynamic_cast<QSplitter*>(Widget);
+	QSplitter* Splitter = qobject_cast<QSplitter*>(Widget);
 	if (Splitter)
 	{
 		s.writeStartElement("Splitter");
@@ -759,7 +776,7 @@ void DockContainerWidgetPrivate::saveChildNodesState(QXmlStreamWriter& s, QWidge
 	}
 	else
 	{
-		CDockAreaWidget* DockArea = dynamic_cast<CDockAreaWidget*>(Widget);
+		CDockAreaWidget* DockArea = qobject_cast<CDockAreaWidget*>(Widget);
 		if (DockArea)
 		{
 			DockArea->saveState(s);
@@ -1046,7 +1063,7 @@ void DockContainerWidgetPrivate::addDockArea(CDockAreaWidget* NewDockArea, DockW
 void DockContainerWidgetPrivate::dumpRecursive(int level, QWidget* widget)
 {
 #if defined(QT_DEBUG)
-	QSplitter* Splitter = dynamic_cast<QSplitter*>(widget);
+	QSplitter* Splitter = qobject_cast<QSplitter*>(widget);
 	QByteArray buf;
     buf.fill(' ', level * 4);
 	if (Splitter)
@@ -1069,7 +1086,7 @@ void DockContainerWidgetPrivate::dumpRecursive(int level, QWidget* widget)
 	}
 	else
 	{
-		CDockAreaWidget* DockArea = dynamic_cast<CDockAreaWidget*>(widget);
+		CDockAreaWidget* DockArea = qobject_cast<CDockAreaWidget*>(widget);
 		if (!DockArea)
 		{
 			return;
@@ -1285,7 +1302,7 @@ void CDockContainerWidget::removeDockArea(CDockAreaWidget* area)
 		}
 
 		QWidget* widget = Splitter->widget(0);
-		QSplitter* ChildSplitter = dynamic_cast<QSplitter*>(widget);
+		QSplitter* ChildSplitter = qobject_cast<QSplitter*>(widget);
 		// If the one and only content widget of the splitter is not a splitter
 		// then we are finished
 		if (!ChildSplitter)
@@ -1392,7 +1409,7 @@ void CDockContainerWidget::dropFloatingWidget(CFloatingDockContainer* FloatingWi
 	if (DockArea)
 	{
 		auto dropOverlay = d->DockManager->dockAreaOverlay();
-		dropOverlay->setAllowedAreas(AllDockAreas);
+		dropOverlay->setAllowedAreas(DockArea->allowedAreas());
 		dropArea = dropOverlay->showOverlay(DockArea);
 		if (ContainerDropArea != InvalidDockWidgetArea &&
 			ContainerDropArea != dropArea)
@@ -1436,41 +1453,16 @@ void CDockContainerWidget::dropFloatingWidget(CFloatingDockContainer* FloatingWi
 
 
 //============================================================================
-void CDockContainerWidget::dropWidget(QWidget* Widget, const QPoint& TargetPos)
+void CDockContainerWidget::dropWidget(QWidget* Widget, DockWidgetArea DropArea, CDockAreaWidget* TargetAreaWidget)
 {
-    ADS_PRINT("CDockContainerWidget::dropFloatingWidget");
     CDockWidget* SingleDockWidget = topLevelDockWidget();
-	CDockAreaWidget* DockArea = dockAreaAt(TargetPos);
-	auto dropArea = InvalidDockWidgetArea;
-	auto ContainerDropArea = d->DockManager->containerOverlay()->dropAreaUnderCursor();
-
-	if (DockArea)
+	if (TargetAreaWidget)
 	{
-		auto dropOverlay = d->DockManager->dockAreaOverlay();
-		dropOverlay->setAllowedAreas(AllDockAreas);
-		dropArea = dropOverlay->showOverlay(DockArea);
-		if (ContainerDropArea != InvalidDockWidgetArea &&
-			ContainerDropArea != dropArea)
-		{
-			dropArea = InvalidDockWidgetArea;
-		}
-
-		if (dropArea != InvalidDockWidgetArea)
-		{
-            ADS_PRINT("Dock Area Drop Content: " << dropArea);
-            d->moveToNewSection(Widget, DockArea, dropArea);
-		}
+		d->moveToNewSection(Widget, TargetAreaWidget, DropArea);
 	}
-
-	// mouse is over container
-	if (InvalidDockWidgetArea == dropArea)
+	else
 	{
-		dropArea = ContainerDropArea;
-        ADS_PRINT("Container Drop Content: " << dropArea);
-		if (dropArea != InvalidDockWidgetArea)
-		{
-			d->moveToContainer(Widget, dropArea);
-		}
+		d->moveToContainer(Widget, DropArea);
 	}
 
 	// If there was a top level widget before the drop, then it is not top
@@ -1573,7 +1565,7 @@ bool CDockContainerWidget::restoreState(CDockingStateReader& s, bool Testing)
 
 	d->Layout->replaceWidget(d->RootSplitter, NewRootSplitter);
 	QSplitter* OldRoot = d->RootSplitter;
-	d->RootSplitter = dynamic_cast<QSplitter*>(NewRootSplitter);
+	d->RootSplitter = qobject_cast<QSplitter*>(NewRootSplitter);
 	OldRoot->deleteLater();
 
 	return true;

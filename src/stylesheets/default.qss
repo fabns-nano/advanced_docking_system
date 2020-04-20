@@ -9,7 +9,6 @@ ads--CDockContainerWidget
   /* border-top:1px solid rgba(25,25,25,50%); */
   /* border-bottom:1px solid rgba(125,25,25,50%); */
   background-color:transparent;
-  /* qproperty-drawBase: 0; */
   border-bottom:1px solid rgba(25,25,25,50%);  
 }
 
@@ -34,8 +33,7 @@ ads--CDockAreaWidget
   background: #FF0000;
   */
   border:0;
-  background-color:transparent;
-  /* qproperty-drawBase:0; */
+  background-color:transparent; 
 }
 
 ads--CDockWidget

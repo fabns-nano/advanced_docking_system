@@ -3,6 +3,5 @@
         <file>stylesheets/default.qss</file>
         <file>images/close-button.svg</file>
         <file>images/close-button-disabled.svg</file>
-        <file>stylesheets/default_linux.css</file>
     </qresource>
 </RCC>

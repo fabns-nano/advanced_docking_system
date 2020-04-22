@@ -1,0 +1,152 @@
+
+/*
+ * Default style sheet on Windows Platforms
+ * Note: Always use CSS-classes with and without "ads--" namespace to support Qt4 & Qt5
+ */
+
+ads--CDockContainerWidget
+{
+  /* border-top:1px solid rgba(25,25,25,50%); */
+  /* border-bottom:1px solid rgba(125,25,25,50%); */
+  background-color:transparent;
+  border-bottom:1px solid rgba(25,25,25,50%);  
+}
+
+/* parece ser toda a área onde o widget q será aberto será desenhado */
+ads--CDockContainerWidget QSplitter {
+
+}
+
+/* handle que divide as telas. Com o darkmode default tem o hightlight azul */
+ads--CDockContainerWidget QSplitter::handle
+{
+  /*
+  background: palette(dark);
+  border:3px solid red;
+  */
+}
+
+/* box que envolve todo widget */
+ads--CDockAreaWidget
+{
+  /*
+  background: #FF0000;
+  */
+  border:0;
+  background-color:transparent; 
+}
+
+ads--CDockWidget
+{
+  /*
+    background: palette(light);
+    border-color: palette(light);
+    border-style: solid;
+    border-width: 1px 0 0 0;
+  */
+  margin: 0;
+  padding:0;
+  border-top: 1px solid #2a2a2a;
+}
+
+ads--CDockWidgetTab
+{
+    /*
+    background: palette(dark);
+    border-color: palette(dark);
+    border-style: solid;
+    border-width: 0 1px 0 0;
+    padding: 0 0px;
+    background-color:qlineargradient(x1:0,y1:1,x2:0,y2:0,stop:0 rgba(25,25,25,127),stop:1 rgba(53,53,53,75));
+    border-bottom: 0;
+    */
+  padding:4px 6px;
+  border:1px solid #2d2d2d;
+  border-top-left-radius:6px;
+  border-top-right-radius:6px;
+  background-color: #262626
+}
+
+/* tab ativo */
+ads--CDockWidgetTab[activeTab="true"], ads--CDockWidgetTab:hover
+{
+  background-color: #3a3a3a;
+  border-bottom:2px solid palette(highlight);
+  /* 
+  background-color:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 rgba(53,53,53,127),stop:1 rgba(66,66,66,50%));
+  border-bottom-color:rgba(66,66,66,75%);    
+  border-bottom:2px solid palette(highlight); */
+  /* background: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:0.5, stop:0 palette(window), stop:1 palette(light)); */
+  /* background: palette(highlight); */
+}
+
+ads--CDockWidgetTab[activeTab="false"]
+{
+  margin-top:2px;
+}
+
+/* label do tab inativo */
+ads--CDockWidgetTab QLabel
+{
+    /* color: palette(dark); */
+    color: #767676;
+}
+
+/* label do tab ativo */
+ads--CDockWidgetTab[activeTab="true"] QLabel
+{
+  color: #CACACA;
+  /* border-bottom:2px solid palette(highlight); */
+}
+
+ads--CDockAreaTitleBar {
+  padding-bottom: 0px;
+}
+
+ads--CTitleBarButton
+{
+  padding: 0px 0px;
+}
+
+
+QScrollArea#dockWidgetScrollArea
+{
+  padding: 0px;
+  border: none;
+}
+
+
+#tabCloseButton
+{
+  margin-top: 2px;
+  background: none;
+  border: none;
+  padding: 0px -2px;
+  image: none;
+}
+
+#tabCloseButton:hover
+{
+  border: 1px solid rgba(0, 0, 0, 32);
+  background: rgba(0, 0, 0, 16);
+}
+
+#tabCloseButton:pressed
+{
+  background: rgba(0, 0, 0, 32);
+}
+
+/*
+OscilloscopeView QScrollArea {
+  margin: 0;
+  padding: 0;
+}
+*/
+
+ads--CDockAreaWidget ads--CDockWidget {
+  margin: 0;
+  padding: 0;
+  background-color: #ff0000;
+  border: 1px solid #3d3d3d;
+  border-radius: 6px;
+}

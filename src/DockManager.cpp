@@ -154,11 +154,7 @@ void DockManagerPrivate::loadStylesheet()
 {
   initalizeResources();
 	QString Result;
-#ifdef Q_OS_LINUX
-    QFile StyleSheetFile(":ads/stylesheets/default_linux.css");
-#else
 	QFile StyleSheetFile(":ads/stylesheets/default.qss");
-#endif
 	StyleSheetFile.open(QIODevice::ReadOnly);
 	QTextStream StyleSheetStream(&StyleSheetFile);
 	Result = StyleSheetStream.readAll();

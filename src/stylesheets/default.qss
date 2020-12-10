@@ -7,20 +7,20 @@ QFrame
 .QFrame[frameShape="4"] {
   max-height: 1px;
   border: none;
-  background-color: rgb(81, 81, 81);
+  background-color: rgb(80, 80, 80);
 }
 
 /* Vertical line */
 .QFrame[frameShape="5"] {
   max-width: 1px;
   border: none;
-  background-color: rgb(81, 81, 81);
+  background-color: rgb(80, 80, 80);
 }
 
 
 QFrame[border="true"]
 {
-    border: 1px solid rgb(81, 81, 81);
+    border: 1px solid rgb(80, 80, 80);
 }
 
 /*===========================================================================
@@ -28,47 +28,25 @@ QFrame[border="true"]
  *===========================================================================*/
 QMainWindow::separator 
 {
-    background: rgb(51, 51, 51);
-    width: 6px;
+  background: rgb(255, 0, 0);
+  width: 10px;
 }
 
 QMainWindow::separator:hover 
 {
-    background: rgba(247, 138, 9, 50);
+  /* background: rgba(247, 138, 9, 50); */
+  /* background:rgb(80, 80, 80); */
+  background-color:rgb(239, 67, 0);
 }
- 
+
 QMainWindow
 {
-    background: rgb(51, 51, 51);
+  background: rgb(50, 50, 50);
 }
 
 /*===========================================================================
  * QSplitter
  *===========================================================================*/
-QSplitterHandle:hover 
-{
-	
-}
-
-
-QSplitter::handle:horizontal
-{
-    image: url(:/visual/icons_darkstyle/splitter_horizontal);
-    width: 9px;
-}
-
-QSplitter::handle:vertical
-{
-    image: url(:/visual/icons_darkstyle/splitter_vertical);
-    height: 9px;
-}
-
-
-QSplitter::handle:hover
-{
-    /*background-color: rgb(71, 71, 71);*/
-    background-color: rgba(247, 138, 9, 96);
-}
 
 
 /*===========================================================================
@@ -81,7 +59,7 @@ QPushButton
     background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
                                       stop:0 rgb(70, 70, 70), 
                                       stop:1 rgb(60, 60, 60));
-    border: 1px solid rgb(81, 81, 81);
+    border: 1px solid rgb(80, 80, 80);
     /*min-height: 12px;*/
     padding: 5px;
 }
@@ -110,7 +88,7 @@ QPushButton:pressed
                                       stop:0 rgb(60, 60, 60), 
                                       stop:1 rgb(70, 70, 70));
     color: palette(highlight);
-    border-color: rgb(81, 81, 81);
+    border-color: rgb(80, 80, 80);
 }
 
 
@@ -160,15 +138,15 @@ QToolButton:hover
 
 QToolButton:pressed
 {
-    background-color: rgb(81, 81, 81);
+    background-color: rgb(80, 80, 80);
     color: palette(highlight);
-    border-color: rgb(81, 81, 81);
+    border-color: rgb(80, 80, 80);
 }
 
 
 QToolButton:checked:!pressed
 {
-    background-color: rgb(81, 81, 81);
+    background-color: rgb(80, 80, 80);
     color: palette(highlight);
 }
 
@@ -184,7 +162,7 @@ QToolButton::menu-button {
 }
 
 QToolButton::menu-button:hover {
-    border-left: 1px solid rgb(81, 81, 81);
+    border-left: 1px solid rgb(80, 80, 80);
 }
 
 
@@ -211,8 +189,7 @@ QToolButton::menu-arrow:open {
 
 ads--CDockContainerWidget
 {
-	/* background: rgb(31, 31, 31); */
-  background: palette(Dark);
+	background: rgb(31, 31, 31);
 } 
 
 ads--CDockManager
@@ -224,14 +201,16 @@ ads--CDockManager
 ads--CDockAreaWidget
 {
   border-top: none;
-  background-color: palette(Window);
+  background: rgb(50, 50, 50);
 }
+
 
 ads--CDockAreaTitleBar
 {
+	/* background: rgb(31, 31, 31); */
 	background: rgb(80, 80, 80);
 	border-bottom: 1px solid palette(Highlight);
-	min-height: 23px;
+	min-height: 25px;
 }
 
 ads--CDockAreaTitleBar:disabled
@@ -261,17 +240,12 @@ ads--CDockAreaTabBar
 
 }
 
-/* Se a regra abaixo for habilitada, os ícones: close, detach, etc irão desaparecer
-não entendo pq isso ocorre... */
-/* #tabsContainerWidget
-{
-	background: background: rgb(80, 80, 80);
-} */
-
-/*  */
 ads--CDockWidgetTab
 {
-    padding: 0 0px;
+  background-color: rgb(80, 80, 80);
+  padding: 0 0px;
+  border-top-left-radius:7px;
+  border-top-right-radius:7px;
 }
 
 ads--CDockWidgetTab > QLabel
@@ -281,12 +255,13 @@ ads--CDockWidgetTab > QLabel
 
 ads--CDockWidgetTab[activeTab="false"]
 {
-	background: rgb(80, 80, 80);
-	border-right: 1px solid rgb(51, 51, 51);
+	background: rgb(50, 50, 50);
+	border-right: 1px solid rgb(50, 50, 50);
 }
 
 ads--CDockWidgetTab:hover {
-  background: palette(Highlight);
+  background: rgb(80, 80, 80);
+  color: rgb(255, 255, 255);
 }
 
 ads--CDockWidgetTab[activeTab="true"]
@@ -302,6 +277,11 @@ ads--CDockWidgetTab[activeTab="true"]:disabled
 ads--CDockWidgetTab[activeTab="true"] #dockWidgetTabLabel
 {
 	color: rgb(255, 255, 255);
+}
+
+/* background of the ADS tabs */
+QWidget#tabsContainerWidget {
+  background: rgb(80, 80, 80);
 }
 
 #tabCloseButton
@@ -332,20 +312,12 @@ ads--CDockWidget > QToolBar
 
 ads--CDockWidget 
 {
-  border: 10px solid rgb(80, 80, 80);
+  /* border: 2px solid rgb(35, 35, 35);
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
   border-top: none;
-  background: rgb(51, 51, 51);
-}
-
-/**
- * The border comes from the itemview that is inside of the dock widget so we
- * we can disable the border
- */
-ads--CDockWidget[ItemViewContainer="true"]
-{
-	border-left: none;
-	border-right: none;
-	border-bottom: none;
+  padding: 0px 5px 0px 5px; */
+  background: rgb(50, 50, 50);
 }
 
 ads--CDockWidget[ItemViewContainer="true"] QTableView
@@ -356,25 +328,11 @@ ads--CDockWidget[ItemViewContainer="true"] QTableView
 	background-color: rgb(46, 46, 46);
 }
 
-ads--CDockWidget
-{
-  /*
-    background: palette(light);
-    border-color: palette(light);
-    border-style: solid;
-    border-width: 1px 0 0 0;
-  */
-  margin: 0;
-  padding:0;
-  /* border-top: 1px solid #ff0000; */
-  border:none;
-  background-color: palette(Dark);
-}
-
 ads--CTitleBarButton
 {
   padding: 0px 0px;
 }
+
 
 /*===========================================================================
  * QtAdvancedDockingSystem - END

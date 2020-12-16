@@ -1,41 +1,13 @@
-QFrame
-{
-    border: none;
-}
-
-/* Horizontal line */
-.QFrame[frameShape="4"] {
-  max-height: 1px;
-  border: none;
-  background-color: rgb(80, 80, 80);
-}
-
-/* Vertical line */
-.QFrame[frameShape="5"] {
-  max-width: 1px;
-  border: none;
-  background-color: rgb(80, 80, 80);
-}
-
-
-QFrame[border="true"]
-{
-    border: 1px solid rgb(80, 80, 80);
-}
-
 /*===========================================================================
  * QMainWindow
  *===========================================================================*/
 QMainWindow::separator 
 {
-  background: rgb(255, 0, 0);
   width: 10px;
 }
 
 QMainWindow::separator:hover 
 {
-  /* background: rgba(247, 138, 9, 50); */
-  /* background:rgb(80, 80, 80); */
   background-color:rgb(239, 67, 0);
 }
 

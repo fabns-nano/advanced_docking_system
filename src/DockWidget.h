@@ -34,8 +34,8 @@
 
 #include "ads_globals.h"
 
-class QToolBar;
-class QXmlStreamWriter;
+QT_FORWARD_DECLARE_CLASS(QToolBar)
+QT_FORWARD_DECLARE_CLASS(QXmlStreamWriter)
 
 namespace ads
 {
@@ -58,7 +58,7 @@ private:
     DockWidgetPrivate* d; ///< private data (pimpl)
     friend struct DockWidgetPrivate;
 
-private slots:
+private Q_SLOTS:
     /**
      * Adjusts the toolbar icon sizes according to the floating state
      */
@@ -147,13 +147,17 @@ public:
 
     enum DockWidgetFeature
     {
-        DockWidgetClosable = 0x01,
-        DockWidgetMovable = 0x02,///< this feature is not properly implemented yet and is ignored
-        DockWidgetFloatable = 0x04,
+        DockWidgetClosable = 0x01,///< dock widget has a close button
+        DockWidgetMovable = 0x02,///< dock widget is movable and can be moved to a new position in the current dock container
+        DockWidgetFloatable = 0x04,///< dock widget can be dragged into a floating window
         DockWidgetDeleteOnClose = 0x08, ///< deletes the dock widget when it is closed
-        CustomCloseHandling = 0x10,
-        DefaultDockWidgetFeatures = DockWidgetClosable | DockWidgetMovable | DockWidgetFloatable,
+        CustomCloseHandling = 0x10, ///< clicking the close button will not close the dock widget but emits the closeRequested() signal instead
+        DockWidgetFocusable = 0x20, ///< if this is enabled, a dock widget can get focus highlighting
+        DockWidgetForceCloseWithArea = 0x40, ///< dock widget will be closed when the dock area hosting it is closed
+        NoTab = 0x80, ///< dock widget tab will never be shown if this flag is set
+        DefaultDockWidgetFeatures = DockWidgetClosable | DockWidgetMovable | DockWidgetFloatable | DockWidgetFocusable,
         AllDockWidgetFeatures = DefaultDockWidgetFeatures | DockWidgetDeleteOnClose | CustomCloseHandling,
+        DockWidgetAlwaysCloseAndDelete = DockWidgetForceCloseWithArea | DockWidgetDeleteOnClose,
         NoDockWidgetFeatures = 0x00
     };
     Q_DECLARE_FLAGS(DockWidgetFeatures, DockWidgetFeature)
@@ -188,6 +192,23 @@ public:
         ForceScrollArea,
         ForceNoScrollArea
     };
+
+
+    /**
+     * The mode of the minimumSizeHint() that is returned by the DockWidget
+     * minimumSizeHint() function.
+     * To ensure, that a dock widget does not block resizing, the dock widget
+     * reimplements minimumSizeHint() function to return a very small minimum
+     * size hint. If you would like to adhere the minimumSizeHint() from the
+     * content widget, then set the minimumSizeHintMode() to
+     * MinimumSizeHintFromContent.
+     */
+    enum eMinimumSizeHintMode
+    {
+    	MinimumSizeHintFromDockWidget,
+    	MinimumSizeHintFromContent
+    };
+
 
     /**
      * This mode configures the behavior of the toggle view action.
@@ -225,7 +246,8 @@ public:
     virtual ~CDockWidget();
 
     /**
-     * We return a fixed minimum size hint for all dock widgets
+     * We return a fixed minimum size hint or the size hint of the content
+     * widget if minimum size hint mode is MinimumSizeHintFromContent
      */
     virtual QSize minimumSizeHint() const override;
 
@@ -335,6 +357,18 @@ public:
     void setToggleViewActionMode(eToggleViewActionMode Mode);
 
     /**
+     * Configures the minimum size hint that is returned by the
+     * minimumSizeHint() function.
+     * \see eMinimumSizeHintMode for a detailed description
+     */
+    void setMinimumSizeHintMode(eMinimumSizeHintMode Mode);
+
+    /**
+     * Returns true if the dock widget is set as central widget of it's dock manager
+     */
+    bool isCentralWidget() const;
+
+    /**
      * Sets the dock widget icon that is shown in tabs and in toggle view
      * actions
      */
@@ -424,18 +458,55 @@ public:
     void setTabToolTip(const QString &text);
 #endif
 
+    /**
+     * Returns true if the dock widget is floating and if the floating dock
+     * container is full screen
+     */
+    bool isFullScreen() const;
+
+    /**
+     * Returns true if this dock widget is in a dock area, that contains at
+     * least 2 opened dock widgets
+     */
+    bool isTabbed() const;
+
+    /**
+     * Returns true if this dock widget is the current one in the dock
+     * area widget that contains it.
+     * If the dock widget is the only opened dock widget in a dock area,
+     * the true is returned
+     */
+    bool isCurrentTab() const;
+
 public: // reimplements QFrame -----------------------------------------------
     /**
      * Emits titleChanged signal if title change event occurs
      */
     virtual bool event(QEvent *e) override;
 
-public slots:
+public Q_SLOTS:
     /**
      * This property controls whether the dock widget is open or closed.
      * The toogleViewAction triggers this slot
      */
     void toggleView(bool Open = true);
+
+    /**
+     * Makes this dock widget the current tab in its dock area.
+     * The function only has an effect, if the dock widget is open. A call
+     * to this function will not toggle the view, so if it is closed,
+     * nothing will happen
+     */
+    void setAsCurrentTab();
+
+    /**
+     * Brings the dock widget to the front
+     * This means:
+     * 	- If the dock widget is tabbed with other dock widgets but its tab is not current, it's made current.
+     * 	- If the dock widget is floating, QWindow::raise() is called.
+     * 	This only applies if the dock widget is already open. If closed, does nothing.
+     */
+    void raise();
 
     /**
      * This function will make a docked widget floating
@@ -453,8 +524,28 @@ public slots:
      */
     void closeDockWidget();
 
+    /**
+     * Shows the widget in full-screen mode.
+     * Normally this function only affects windows. To make the interface
+     * compatible to QDockWidget, this function also maximizes a floating
+     * dock widget.
+     *
+     * \note Full-screen mode works fine under Windows, but has certain
+     * problems (doe not work) under X (Linux). These problems are due to
+     * limitations of the ICCCM protocol that specifies the communication
+     * between X11 clients and the window manager. ICCCM simply does not
+     * understand the concept of non-decorated full-screen windows.
+     */
+    void showFullScreen();
 
-signals:
+    /**
+     * This function complements showFullScreen() to restore the widget
+     * after it has been in full screen mode.
+     */
+    void showNormal();
+
+
+Q_SIGNALS:
     /**
      * This signal is emitted if the dock widget is opened or closed
      */
@@ -494,7 +585,7 @@ signals:
      * This signal is emitted when the features property changes.
      * The features parameter gives the new value of the property.
      */
-    void featuresChanged(DockWidgetFeatures features);
+    void featuresChanged(ads::CDockWidget::DockWidgetFeatures features);
 }; // class DockWidget
 }
  // namespace ads

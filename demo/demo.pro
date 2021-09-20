@@ -4,8 +4,12 @@ TARGET = AdvancedDockingSystemDemo
 DESTDIR = $${ADS_OUT_ROOT}/lib
 QT += core gui widgets
 
-win32 {
-QT += axcontainer
+include(../ads.pri)
+
+lessThan(QT_MAJOR_VERSION, 6) {
+    win32 {
+        QT += axcontainer
+    }
 }
 
 CONFIG += c++14
@@ -18,34 +22,22 @@ adsBuildStatic {
 
 SOURCES += \
 	main.cpp \
-	MainWindow.cpp
+	MainWindow.cpp \
+	StatusDialog.cpp
 
 HEADERS += \
-	MainWindow.h
+	MainWindow.h \
+	StatusDialog.h
 
 FORMS += \
-	mainwindow.ui
+	mainwindow.ui \
+	StatusDialog.ui
 	
 RESOURCES += demo.qrc
 
 
 LIBS += -L$${ADS_OUT_ROOT}/lib
 
-# Dependency: AdvancedDockingSystem (shared)
-CONFIG(debug, debug|release){
-    win32 {
-        LIBS += -lqtadvanceddockingd
-    }
-    else:mac {
-        LIBS += -lqtadvanceddocking_debug
-    }
-    else {
-        LIBS += -lqtadvanceddocking
-    }
-}
-else{
-    LIBS += -lqtadvanceddocking
-}
 
 INCLUDEPATH += ../src
 DEPENDPATH += ../src

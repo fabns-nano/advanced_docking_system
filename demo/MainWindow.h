@@ -63,6 +63,8 @@ private slots:
 	void createEditor();
 	void createTable();
 	void onEditorCloseRequested();
+	void showStatusDialog();
+	void toggleDockWidgetWindowTitle();
 };
 
 #endif // MAINWINDOW_H

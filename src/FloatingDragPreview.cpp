@@ -33,7 +33,6 @@ struct FloatingDragPreviewPrivate
 	CFloatingDragPreview *_this;
 	QWidget* Content;
 	CDockAreaWidget* ContentSourceArea = nullptr;
-	CDockContainerWidget* ContenSourceContainer = nullptr;
 	QPoint DragStartMousePosition;
 	CDockManager* DockManager;
 	CDockContainerWidget *DropContainer = nullptr;
@@ -61,11 +60,17 @@ struct FloatingDragPreviewPrivate
 	void cancelDragging()
 	{
 		Canceled = true;
-		emit _this->draggingCanceled();
+		Q_EMIT _this->draggingCanceled();
 		DockManager->containerOverlay()->hideOverlay();
 		DockManager->dockAreaOverlay()->hideOverlay();
 		_this->close();
 	}
+
+	/**
+	 * Creates the real floating widget in case the mouse is released outside
+	 * outside of any drop area
+	 */
+	void createFloatingWidget();
 };
 // struct LedArrayPanelPrivate
 
@@ -107,7 +112,7 @@ void FloatingDragPreviewPrivate::updateDropOverlays(const QPoint &GlobalPos)
 	{
 		ContainerOverlay->hideOverlay();
 		DockAreaOverlay->hideOverlay();
-		if (CDockManager::configFlags().testFlag(CDockManager::DragPreviewIsDynamic))
+		if (CDockManager::testConfigFlag(CDockManager::DragPreviewIsDynamic))
 		{
 			setHidden(false);
 		}
@@ -117,10 +122,8 @@ void FloatingDragPreviewPrivate::updateDropOverlays(const QPoint &GlobalPos)
 	int VisibleDockAreas = TopContainer->visibleDockAreaCount();
 	ContainerOverlay->setAllowedAreas(
 	    VisibleDockAreas > 1 ? OuterDockAreas : AllDockAreas);
-	DockWidgetArea ContainerArea = ContainerOverlay->showOverlay(TopContainer);
-	ContainerOverlay->enableDropPreview(ContainerArea != InvalidDockWidgetArea);
 	auto DockArea = TopContainer->dockAreaAt(GlobalPos);
-	if (DockArea && DockArea->isVisible() && VisibleDockAreas > 0 && DockArea != ContentSourceArea)
+	if (DockArea && DockArea->isVisible() && VisibleDockAreas >= 0 && DockArea != ContentSourceArea)
 	{
 		DockAreaOverlay->enableDropPreview(true);
 		DockAreaOverlay->setAllowedAreas(
@@ -131,8 +134,7 @@ void FloatingDragPreviewPrivate::updateDropOverlays(const QPoint &GlobalPos)
 		// the mouse is in the title bar. If the ContainerArea is valid
 		// then we ignore the dock area of the dockAreaOverlay() and disable
 		// the drop preview
-		if ((Area == CenterDockWidgetArea)
-		    && (ContainerArea != InvalidDockWidgetArea))
+		if ((Area == CenterDockWidgetArea) && (ContainerDropArea != InvalidDockWidgetArea))
 		{
 			DockAreaOverlay->enableDropPreview(false);
 			ContainerOverlay->enableDropPreview(true);
@@ -141,6 +143,7 @@ void FloatingDragPreviewPrivate::updateDropOverlays(const QPoint &GlobalPos)
 		{
 			ContainerOverlay->enableDropPreview(InvalidDockWidgetArea == Area);
 		}
+		ContainerOverlay->showOverlay(TopContainer);
 	}
 	else
 	{
@@ -148,10 +151,15 @@ void FloatingDragPreviewPrivate::updateDropOverlays(const QPoint &GlobalPos)
 		// If there is only one single visible dock area in a container, then
 		// it does not make sense to show a dock overlay because the dock area
 		// would be removed and inserted at the same position
-		if (VisibleDockAreas <= 1)
+		if (VisibleDockAreas == 1)
 		{
-			ContainerOverlay->hide();
+			ContainerOverlay->hideOverlay();
 		}
+		else
+		{
+			ContainerOverlay->showOverlay(TopContainer);
+		}
+
 
 		if (DockArea == ContentSourceArea && InvalidDockWidgetArea == ContainerDropArea)
 		{
@@ -159,7 +167,7 @@ void FloatingDragPreviewPrivate::updateDropOverlays(const QPoint &GlobalPos)
 		}
 	}
 
-	if (CDockManager::configFlags().testFlag(CDockManager::DragPreviewIsDynamic))
+	if (CDockManager::testConfigFlag(CDockManager::DragPreviewIsDynamic))
 	{
 		setHidden(DockDropArea != InvalidDockWidgetArea || ContainerDropArea != InvalidDockWidgetArea);
 	}
@@ -173,6 +181,40 @@ FloatingDragPreviewPrivate::FloatingDragPreviewPrivate(CFloatingDragPreview *_pu
 
 }
 
+
+//============================================================================
+void FloatingDragPreviewPrivate::createFloatingWidget()
+{
+	CDockWidget* DockWidget = qobject_cast<CDockWidget*>(Content);
+	CDockAreaWidget* DockArea = qobject_cast<CDockAreaWidget*>(Content);
+
+	CFloatingDockContainer* FloatingWidget = nullptr;
+
+	if (DockWidget && DockWidget->features().testFlag(CDockWidget::DockWidgetFloatable))
+	{
+		FloatingWidget = new CFloatingDockContainer(DockWidget);
+	}
+	else if (DockArea && DockArea->features().testFlag(CDockWidget::DockWidgetFloatable))
+	{
+		FloatingWidget = new CFloatingDockContainer(DockArea);
+	}
+
+	if (FloatingWidget)
+	{
+		FloatingWidget->setGeometry(_this->geometry());
+		FloatingWidget->show();
+		if (!CDockManager::testConfigFlag(CDockManager::DragPreviewHasWindowFrame))
+		{
+			QApplication::processEvents();
+			int FrameHeight = FloatingWidget->frameGeometry().height() - FloatingWidget->geometry().height();
+			QRect FixedGeometry = _this->geometry();
+			FixedGeometry.adjust(0, FrameHeight, 0, 0);
+			FloatingWidget->setGeometry(FixedGeometry);
+		}
+	}
+}
+
+
 //============================================================================
 CFloatingDragPreview::CFloatingDragPreview(QWidget* Content, QWidget* parent) :
 	QWidget(parent),
@@ -180,7 +222,7 @@ CFloatingDragPreview::CFloatingDragPreview(QWidget* Content, QWidget* parent) :
 {
 	d->Content = Content;
 	setAttribute(Qt::WA_DeleteOnClose);
-	if (CDockManager::configFlags().testFlag(CDockManager::DragPreviewHasWindowFrame))
+	if (CDockManager::testConfigFlag(CDockManager::DragPreviewHasWindowFrame))
 	{
 		setWindowFlags(
 			Qt::Window | Qt::WindowMaximizeButtonHint | Qt::WindowCloseButtonHint);
@@ -203,7 +245,7 @@ CFloatingDragPreview::CFloatingDragPreview(QWidget* Content, QWidget* parent) :
 	// Create a static image of the widget that should get undocked
 	// This is like some kind preview image like it is uses in drag and drop
 	// operations
-	if (CDockManager::configFlags().testFlag(CDockManager::DragPreviewShowsContentPixmap))
+	if (CDockManager::testConfigFlag(CDockManager::DragPreviewShowsContentPixmap))
 	{
 		d->ContentPreviewPixmap = QPixmap(Content->size());
 		Content->render(&d->ContentPreviewPixmap);
@@ -226,7 +268,6 @@ CFloatingDragPreview::CFloatingDragPreview(CDockWidget* Content)
 	if (Content->dockAreaWidget()->openDockWidgetsCount() == 1)
 	{
 		d->ContentSourceArea = Content->dockAreaWidget();
-		d->ContenSourceContainer = Content->dockContainer();
 	}
 	setWindowTitle(Content->windowTitle());
 }
@@ -238,7 +279,6 @@ CFloatingDragPreview::CFloatingDragPreview(CDockAreaWidget* Content)
 {
 	d->DockManager = Content->dockManager();
 	d->ContentSourceArea = Content;
-	d->ContenSourceContainer = Content->dockContainer();
 	setWindowTitle(Content->currentDockWidget()->windowTitle());
 }
 
@@ -257,6 +297,7 @@ void CFloatingDragPreview::moveFloating()
 	const QPoint moveToPos = QCursor::pos() - d->DragStartMousePosition
 	    - QPoint(BorderSize, 0);
 	move(moveToPos);
+	d->updateDropOverlays(QCursor::pos());
 }
 
 
@@ -275,58 +316,35 @@ void CFloatingDragPreview::startFloating(const QPoint &DragStartMousePos,
 
 
 //============================================================================
-void CFloatingDragPreview::moveEvent(QMoveEvent *event)
-{
-	QWidget::moveEvent(event);
-	d->updateDropOverlays(QCursor::pos());
-}
-
-
-//============================================================================
 void CFloatingDragPreview::finishDragging()
 {
 	ADS_PRINT("CFloatingDragPreview::finishDragging");
 	auto DockDropArea = d->DockManager->dockAreaOverlay()->visibleDropAreaUnderCursor();
 	auto ContainerDropArea = d->DockManager->containerOverlay()->visibleDropAreaUnderCursor();
-	if (d->DropContainer && (DockDropArea != InvalidDockWidgetArea))
+	if (!d->DropContainer)
+	{
+		d->createFloatingWidget();
+	}
+	else if (DockDropArea != InvalidDockWidgetArea)
 	{
 		d->DropContainer->dropWidget(d->Content, DockDropArea, d->DropContainer->dockAreaAt(QCursor::pos()));
 	}
-	else if (d->DropContainer && (ContainerDropArea != InvalidDockWidgetArea))
+	else if (ContainerDropArea != InvalidDockWidgetArea)
 	{
-		d->DropContainer->dropWidget(d->Content, ContainerDropArea, nullptr);
-	}
-	else
-	{
-		CDockWidget* DockWidget = qobject_cast<CDockWidget*>(d->Content);
-		CFloatingDockContainer* FloatingWidget = nullptr;
-
-		if (DockWidget && DockWidget->features().testFlag(CDockWidget::DockWidgetFloatable))
+		// If there is only one single dock area, and we drop into the center
+		// then we tabify the dropped widget into the only visible dock area
+		if (d->DropContainer->visibleDockAreaCount() <= 1 && CenterDockWidgetArea == ContainerDropArea)
 		{
-			FloatingWidget = new CFloatingDockContainer(DockWidget);
+			d->DropContainer->dropWidget(d->Content, ContainerDropArea, d->DropContainer->dockAreaAt(QCursor::pos()));
 		}
 		else
 		{
-			CDockAreaWidget* DockArea = qobject_cast<CDockAreaWidget*>(d->Content);
-			if (DockArea->features().testFlag(CDockWidget::DockWidgetFloatable))
-			{
-				FloatingWidget = new CFloatingDockContainer(DockArea);
-			}
+			d->DropContainer->dropWidget(d->Content, ContainerDropArea, nullptr);
 		}
-
-		if (FloatingWidget)
-		{
-			FloatingWidget->setGeometry(this->geometry());
-			FloatingWidget->show();
-			if (!CDockManager::configFlags().testFlag(CDockManager::DragPreviewHasWindowFrame))
-			{
-				QApplication::processEvents();
-				int FrameHeight = FloatingWidget->frameGeometry().height() - FloatingWidget->geometry().height();
-				QRect FixedGeometry = this->geometry();
-				FixedGeometry.adjust(0, FrameHeight, 0, 0);
-				FloatingWidget->setGeometry(FixedGeometry);
-			}
-		}
+	}
+	else
+	{
+		d->createFloatingWidget();
 	}
 
 	this->close();
@@ -345,14 +363,14 @@ void CFloatingDragPreview::paintEvent(QPaintEvent* event)
 	}
 
 	QPainter painter(this);
-	if (CDockManager::configFlags().testFlag(CDockManager::DragPreviewShowsContentPixmap))
+	if (CDockManager::testConfigFlag(CDockManager::DragPreviewShowsContentPixmap))
 	{
 		painter.drawPixmap(QPoint(0, 0), d->ContentPreviewPixmap);
 	}
 
 	// If we do not have a window frame then we paint a QRubberBand like
 	// frameless window
-	if (!CDockManager::configFlags().testFlag(CDockManager::DragPreviewHasWindowFrame))
+	if (!CDockManager::testConfigFlag(CDockManager::DragPreviewHasWindowFrame))
 	{
 		QColor Color = palette().color(QPalette::Active, QPalette::Highlight);
 		QPen Pen = painter.pen();

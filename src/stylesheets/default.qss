@@ -265,27 +265,6 @@ QWidget#tabsContainerWidget {
   background: rgb(80, 80, 80);
 }
 
-#tabCloseButton
-{
-	margin-top: 2px;
-	background: none;
-	border: none;
-	padding: 2px 0px;
-	qproperty-icon: url(:/ads/images/ads_close), url(:/ads/images/ads_close_disabled) disabled;
-	qproperty-iconSize: 12px;
-}
-
-#tabCloseButton:hover
-{
-  border: 1px solid rgba(0, 0, 0, 32);
-	background: rgba(0, 0, 0, 16);
-}
-
-#tabCloseButton:pressed
-{
-	background: rgba(0, 0, 0, 32);
-}
-
 ads--CDockWidget > QToolBar
 {
   border-bottom: 1px solid palette(light);
@@ -326,35 +305,53 @@ ads--CTitleBarButton
 /* ADS close tab, close button & detach icons */
 
 /* Undock  */
-#undockButton {
+#detachGroupButton {
   background: none;
   border: none;
-	qproperty-icon: url(:/ads/images/ads_detach),
-		url(:/ads/images/ads_detach_disabled) disabled;
+	qproperty-icon: url(:/ads/images/ads_detach.svg),
+		url(:/ads/images/ads_detach_disabled.svg) disabled;
 	qproperty-iconSize: 16px;	
 }
 
-#undockButton:hover
+#detachGroupButton:hover
 {
   border: none;
   background:palette(Highlight);
 }
 
 /* Close  */
-#closeButton {
+#tabCloseButton {
   background: none;
   border: none;
-	qproperty-icon: url(:/ads/images/ads_close),
-		url(:/ads/images/ads_close_disabled) disabled;
+	qproperty-icon: url(:/ads/images/ads_close.svg),
+		url(:/ads/images/ads_close_disabled.svg) disabled;
 	qproperty-iconSize: 16px;	
 }
 
-#closeButton:hover
+#tabCloseButton:hover
 {
   background:palette(Highlight);
 }
 
-#closeButton:pressed
+#tabCloseButton:pressed
+{
+  background:rgba(2, 174, 255, 50);
+}
+
+#dockAreaCloseButton {
+  background: none;
+  border: none;
+	qproperty-icon: url(:/ads/images/ads_close.svg),
+		url(:/ads/images/ads_close_disabled.svg) disabled;
+	qproperty-iconSize: 16px;	
+}
+
+#dockAreaCloseButton:hover
+{
+  background:palette(Highlight);
+}
+
+#dockAreaCloseButton:pressed
 {
   background:rgba(2, 174, 255, 50);
 }
@@ -368,8 +365,8 @@ ads--CTitleBarButton
 #tabsMenuButton {
   background: none;
   border: none;
-  qproperty-icon: url(:/ads/images/ads_tab_menu),
-		url(:/ads/images/ads_tab_menu_disabled) disabled;
+  qproperty-icon: url(:/ads/images/ads_tab_menu.svg),
+		url(:/ads/images/ads_tab_menu_disabled.svg) disabled;
 	qproperty-iconSize: 16px;	
 }
 

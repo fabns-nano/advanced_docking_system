@@ -37,6 +37,7 @@
 #include <QWindow>
 
 #include "DockAreaWidget.h"
+#include "DockAreaTitleBar.h"
 
 #include <iostream>
 
@@ -387,6 +388,7 @@ DockWidgetArea CDockOverlay::dropAreaUnderCursor() const
 	}
 
 	if (DockArea->allowedAreas().testFlag(CenterDockWidgetArea)
+	 && !DockArea->titleBar()->isHidden()
 	 && DockArea->titleBarGeometry().contains(DockArea->mapFromGlobal(QCursor::pos())))
 	{
 		return CenterDockWidgetArea;
@@ -804,10 +806,15 @@ void CDockOverlayCross::setIconColors(const QString& Colors)
 		{"Arrow", CDockOverlayCross::ArrowColor},
 		{"Shadow", CDockOverlayCross::ShadowColor}};
 
-    auto ColorList = Colors.split(' ', Qt::SkipEmptyParts);
+#if (QT_VERSION < QT_VERSION_CHECK(5, 14, 0))
+    auto SkipEmptyParts = QString::SkipEmptyParts;
+#else
+    auto SkipEmptyParts = Qt::SkipEmptyParts;
+#endif
+    auto ColorList = Colors.split(' ', SkipEmptyParts);
 	for (const auto& ColorListEntry : ColorList)
 	{
-        auto ComponentColor = ColorListEntry.split('=', Qt::SkipEmptyParts);
+        auto ComponentColor = ColorListEntry.split('=', SkipEmptyParts);
 		int Component = ColorCompenentStringMap.value(ComponentColor[0], -1);
 		if (Component < 0)
 		{

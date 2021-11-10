@@ -1,6 +1,7 @@
 import os
 import sys
 import shlex
+import shutil
 import subprocess
 import glob
 
@@ -141,9 +142,37 @@ class build_ext(sipdistutils.build_ext):
 
     def _find_sip(self):
         """override _find_sip to allow for manually speficied sip path."""
-        return self.sip_bin or super()._find_sip()
+        
+        # 1. Manually specified sip_bin
+        if self.sip_bin:
+            return self.sip_bin
+
+        # 2. Path determined from sipconfig.Configuration()
+        #    This may not exist, depending on conda build configuration.
+        sip_bin = super()._find_sip()
+        if os.path.exists(sip_bin):
+            return sip_bin
+
+        # 3. Finally, fall back to sip binary found in path
+        sip_bin = shutil.which('sip')
+        if sip_bin:
+            return sip_bin
+
+        raise SystemExit('Could not find PyQt SIP binary.')
+        
+    def _sip_sipfiles_dir(self):
+        sip_dir = super()._sip_sipfiles_dir()
+        if os.path.exists(sip_dir):
+            return sip_dir
+        
+        return os.path.join(sys.prefix, 'sip', 'PyQt5')
 
     def _sip_compile(self, sip_bin, source, sbf):
+        target_dir = os.path.dirname(__file__) if self.inplace else self.build_lib
+        pyi = os.path.join(target_dir, "PyQtAds", "QtAds", "ads.pyi")
+        if not os.path.exists(os.path.dirname(pyi)):
+            os.makedirs(os.path.dirname(pyi))
+        
         cmd = [sip_bin]
         if hasattr(self, 'sip_opts'):
             cmd += self.sip_opts
@@ -156,11 +185,20 @@ class build_ext(sipdistutils.build_ext):
             "-I", self.inc_dir,
             "-c", self._sip_output_dir(),
             "-b", sbf,
+            "-y", pyi,
             "-w", "-o"]
 
         cmd += shlex.split(self.pyqt_sip_flags)  # use same SIP flags as for PyQt5
         cmd.append(source)
         self.spawn(cmd)
+        
+        if os.path.exists(pyi):
+            with open(pyi) as f:
+                content = f.readlines()
+            with open(pyi, "w") as f:
+                for line in content:
+                    if not line.startswith("class ads"):
+                        f.write(line)
 
     def swig_sources (self, sources, extension=None):
         if not self.extensions:
@@ -193,8 +231,9 @@ class build_ext(sipdistutils.build_ext):
 
         return super().swig_sources(sources, extension)
 
-    def build_extension(self, ext):
+    def build_extension(self, ext):        
         cppsources = [source for source in ext.sources if source.endswith(".cpp")]
+        headersources = ['src/DockAreaTitleBar_p.h']
 
         dir_util.mkpath(self.build_temp, dry_run=self.dry_run)
 
@@ -228,11 +267,57 @@ class build_ext(sipdistutils.build_ext):
                 if os.path.getsize(out_file) > 0:
                     ext.sources.append(out_file)
 
+        # Run moc on all orphan header files.
+        for source in headersources:
+            # *.cpp -> *.moc
+            moc_file = os.path.basename(source).replace(".h", ".moc")
+            out_file = os.path.join(self.build_temp, moc_file)
+
+            if newer(source, out_file) or self.force:
+                spawn.spawn(get_moc_args(out_file, source),
+                            dry_run=self.dry_run)
+
+            header = source
+            if os.path.exists(header):
+                # *.h -> moc_*.cpp
+                moc_file = "moc_" + os.path.basename(header).replace(
+                    ".h", ".cpp")
+                out_file = os.path.join(self.build_temp, moc_file)
+
+                if newer(header, out_file) or self.force:
+                    spawn.spawn(get_moc_args(out_file, header),
+                                dry_run=self.dry_run)
+
+                if os.path.getsize(out_file) > 0:
+                    ext.sources.append(out_file)
+
         # Add the temp build directory to include path, for compiler to find
         # the created .moc files
         ext.include_dirs += [self._sip_output_dir()]
+        
+        # Run rcc on all resource files
+        resources = [source for source in ext.sources if source.endswith(".qrc")]
+        for source in resources:
+            ext.sources.remove(source)
+            out_file = os.path.join(self.build_temp, "qrc_" + os.path.basename(source).replace(".qrc", ".cpp"))
+            if newer(header, out_file) or self.force:
+                spawn.spawn(["rcc", "-name", os.path.splitext(os.path.basename(source))[0], source, "-o", out_file], dry_run=self.dry_run)
+
+            if os.path.getsize(out_file) > 0:
+                ext.sources.append(out_file)
 
         sipdistutils.build_ext.build_extension(self, ext)
+        
+        import inspect
+        sys.path.append(os.path.join(self.build_lib, 'PyQtAds', 'QtAds'))
+        import ads
+
+        with open(os.path.join(self.build_lib, 'PyQtAds', 'QtAds', '__init__.py'), 'w') as f:
+            f.write('from .._version import *\n')
+            f.write('from .ads import ads\n')
+            for name, member in sorted(inspect.getmembers(ads.ads)):
+                if not name.startswith('_'):
+                    f.write('{0} = ads.{0}\n'.format(name))
 
 
 class ProcessResourceCommand(cmd.Command):
@@ -262,9 +347,10 @@ class BuildPyCommand(build_py):
 setup_requires = ["PyQt5"] if REQUIRE_PYQT else []
 cpp_sources = glob.glob(os.path.join('src', '*.cpp'))
 sip_sources = [os.path.join('sip', MODULE_NAME + '.sip')]
+resources = [os.path.join('src', MODULE_NAME + '.qrc')]
 if sys.platform == 'linux':
     cpp_sources += glob.glob(os.path.join('src', 'linux', '*.cpp'))
-ext_modules = [Extension('PyQtAds.QtAds.ads', cpp_sources + sip_sources)]
+ext_modules = [Extension('PyQtAds.QtAds.ads', cpp_sources + sip_sources + resources)]
 
 install_requires = ["PyQt5"]
 if sys.platform == 'win32':

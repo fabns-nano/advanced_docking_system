@@ -35,8 +35,8 @@
 #include "ads_globals.h"
 #include "DockWidget.h"
 
-class QXmlStreamWriter;
-class QAbstractButton;
+QT_FORWARD_DECLARE_CLASS(QXmlStreamWriter)
+QT_FORWARD_DECLARE_CLASS(QAbstractButton)
 
 namespace ads
 {
@@ -65,8 +65,9 @@ private:
 	friend class CDockWidget;
 	friend struct DockManagerPrivate;
 	friend class CDockManager;
+	void onDockWidgetFeaturesChanged();
 
-private slots:
+private Q_SLOTS:
 	void onTabCloseRequested(int Index);
 
 	/**
@@ -76,6 +77,17 @@ private slots:
 	void reorderDockWidget(int fromIndex, int toIndex);
 
 protected:
+
+#ifdef Q_OS_WIN
+	/**
+	 * Reimplements QWidget::event to handle QEvent::PlatformSurface
+	 * This is here to fix issue #294 Tab refresh problem with a QGLWidget
+	 * that exists since Qt version 5.12.7. So this function is here to
+	 * work around a Qt issue.
+	 */
+	virtual bool event(QEvent *event) override;
+#endif
+
 	/**
 	 * Inserts a dock widget into dock area.
 	 * All dockwidgets in the dock area tabified in a stacked layout with tabs.
@@ -137,13 +149,23 @@ protected:
 	 */
 	void markTitleBarMenuOutdated();
 
-protected slots:
+protected Q_SLOTS:
 	void toggleView(bool Open);
 
 public:
 	using Super = QFrame;
 
 	/**
+	 * Dock area related flags
+	 */
+	enum eDockAreaFlag
+	{
+		HideSingleWidgetTitleBar = 0x0001,
+		DefaultFlags = 0x0000
+	};
+	Q_DECLARE_FLAGS(DockAreaFlags, eDockAreaFlag)
+
+    /**
 	 * Default Constructor
 	 */
 	CDockAreaWidget(CDockManager* DockManager, CDockContainerWidget* parent);
@@ -163,6 +185,13 @@ public:
 	 * if there is no
 	 */
 	CDockContainerWidget* dockContainer() const;
+
+    /**
+     * Returns the largest minimumSizeHint() of the dock widgets in this
+     * area.
+     * The minimum size hint is updated if a dock widget is removed or added.
+     */
+    virtual QSize minimumSizeHint() const override;
 
 	/**
 	 * Returns the rectangle of the title area
@@ -270,7 +299,31 @@ public:
 	 */
 	CDockAreaTitleBar* titleBar() const;
 
-public slots:
+	/**
+	 * Returns the dock area flags - a combination of flags that configure the
+	 * appearance and features of the dock area.
+	 * \see setDockAreaFlasg()
+	 */
+	DockAreaFlags dockAreaFlags() const;
+
+	/**
+	 * Sets the dock area flags - a combination of flags that configure the
+	 * appearance and features of the dock area
+	 */
+	void setDockAreaFlags(DockAreaFlags Flags);
+
+	/**
+	 * Sets the dock area flag Flag on this widget if on is true; otherwise
+	 * clears the flag.
+	 */
+	void setDockAreaFlag(eDockAreaFlag Flag, bool On);
+
+    /**
+     * Returns true if the area contains the central widget of it's manager.
+     */
+    bool isCentralWidgetArea() const;
+
+public Q_SLOTS:
 	/**
 	 * This activates the tab for the given tab index.
 	 * If the dock widget for the given tab is not visible, the this function
@@ -288,7 +341,7 @@ public slots:
 	 */
 	void closeOtherAreas();
 
-signals:
+Q_SIGNALS:
 	/**
 	 * This signal is emitted when user clicks on a tab at an index.
 	 */

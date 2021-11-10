@@ -31,8 +31,12 @@ public:
 		DockWidgetFloatable,
 		DockWidgetDeleteOnClose,
         CustomCloseHandling,
+        DockWidgetFocusable,
+        DockWidgetForceCloseWithArea,
+        NoTab,
         DefaultDockWidgetFeatures,
         AllDockWidgetFeatures,
+        DockWidgetAlwaysCloseAndDelete,
 		NoDockWidgetFeatures
 	};
     typedef QFlags<ads::CDockWidget::DockWidgetFeature> DockWidgetFeatures;
@@ -50,6 +54,12 @@ public:
 		ForceScrollArea,
 		ForceNoScrollArea
 	};
+	
+    enum eMinimumSizeHintMode
+    {
+    	MinimumSizeHintFromDockWidget,
+    	MinimumSizeHintFromContent
+    };
 
 	enum eToggleViewActionMode
 	{
@@ -76,6 +86,8 @@ public:
 	bool isClosed() const;
 	QAction* toggleViewAction() const;
 	void setToggleViewActionMode(ads::CDockWidget::eToggleViewActionMode Mode);
+	void setMinimumSizeHintMode(ads::CDockWidget::eMinimumSizeHintMode Mode);
+    bool isCentralWidget() const;
 	void setIcon(const QIcon& Icon);
 	QIcon icon() const;
 	QToolBar* toolBar() const;
@@ -89,15 +101,22 @@ public:
     virtual QList<QAction*> titleBarActions() const;
 
 	void setTabToolTip(const QString &text);
+    bool isFullScreen() const;
+    bool isTabbed() const;
+    bool isCurrentTab() const;
 
 public:
 	virtual bool event(QEvent *e);
 
 public slots:
 	void toggleView(bool Open = true);
+	void setAsCurrentTab();
+	void raise();
     void setFloating();
     void deleteDockWidget();
     void closeDockWidget();
+    void showFullScreen();
+    void showNormal();
 
 signals:
 	void viewToggled(bool Open);

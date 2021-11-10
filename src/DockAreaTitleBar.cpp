@@ -39,6 +39,7 @@
 #include <QDebug>
 #include <QPointer>
 
+#include "DockAreaTitleBar_p.h"
 #include "ads_globals.h"
 #include "FloatingDockContainer.h"
 #include "FloatingDragPreview.h"
@@ -50,13 +51,12 @@
 #include "DockAreaTabBar.h"
 #include "IconProvider.h"
 #include "DockComponentsFactory.h"
+#include "DockFocusController.h"
 
 #include <iostream>
 
 namespace ads
 {
-using tTitleBarButton = QToolButton;
-
 
 /**
  * Private data class of CDockAreaTitleBar class (pimpl)
@@ -104,10 +104,11 @@ struct DockAreaTitleBarPrivate
 
 	/**
 	 * Returns true if the given config flag is set
+	 * Convenience function to ease config flag testing
 	 */
 	static bool testConfigFlag(CDockManager::eConfigFlag Flag)
 	{
-		return CDockManager::configFlags().testFlag(Flag);
+		return CDockManager::testConfigFlag(Flag);
 	}
 
 	/**
@@ -129,86 +130,6 @@ struct DockAreaTitleBarPrivate
 	 */
 	IFloatingWidget* makeAreaFloating(const QPoint& Offset, eDragState DragState);
 };// struct DockAreaTitleBarPrivate
-
-
-/**
- * Title bar button of a dock area that customizes tTitleBarButton appearance/behaviour
- * according to various config flags such as:
- * CDockManager::DockAreaHas_xxx_Button - if set to 'false' keeps the button always invisible
- * CDockManager::DockAreaHideDisabledButtons - if set to 'true' hides button when it is disabled
- */
-class CTitleBarButton : public tTitleBarButton
-{
-	Q_OBJECT
-	bool Visible = true;
-	bool HideWhenDisabled = false;
-public:
-	using Super = tTitleBarButton;
-	CTitleBarButton(bool visible = true, QWidget* parent = nullptr)
-		: tTitleBarButton(parent),
-		  Visible(visible),
-		  HideWhenDisabled(DockAreaTitleBarPrivate::testConfigFlag(CDockManager::DockAreaHideDisabledButtons))
-	{}
-	
-
-	/**
-	 * Adjust this visibility change request with our internal settings:
-	 */
-	virtual void setVisible(bool visible) override
-	{
-		// 'visible' can stay 'true' if and only if this button is configured to generaly visible:
-		visible = visible && this->Visible;
-
-		// 'visible' can stay 'true' unless: this button is configured to be invisible when it is disabled and it is currently disabled:
-		if(visible && HideWhenDisabled)
-		{
-			visible = isEnabled();
-		}
-
-		Super::setVisible(visible);
-	}
-	
-protected:
-	/**
-	 * Handle EnabledChanged signal to set button invisible if the configured
-	 */
-	bool event(QEvent *ev) override
-	{
-		if(QEvent::EnabledChange == ev->type() && HideWhenDisabled)
-		{
-			// force setVisible() call 
-			// Calling setVisible() directly here doesn't work well when button is expected to be shown first time
-			QMetaObject::invokeMethod(this, "setVisible", Qt::QueuedConnection, Q_ARG(bool, isEnabled()));
-		}
-
-		return Super::event(ev);
-	}
-};
-
-
-/**
- * This spacer widget is here because of the following problem.
- * The dock area title bar handles mouse dragging and moving the floating widget.
- * The  problem is, that if the title bar becomes invisible, i.e. if the dock
- * area contains only one single dock widget and the dock area is moved
- * into a floating widget, then mouse events are not handled anymore and dragging
- * of the floating widget stops.
- */
-class CSpacerWidget : public QWidget
-{
-	Q_OBJECT
-public:
-	using Super = QWidget;
-	CSpacerWidget(QWidget* Parent = 0)
-	    : Super(Parent)
-	{
-	    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-	    setStyleSheet("border: none; background: none;");
-	}
-	virtual QSize sizeHint() const override {return QSize(0, 0);}
-	virtual QSize minimumSizeHint() const override {return QSize(0, 0);}
-};
-
 
 //============================================================================
 DockAreaTitleBarPrivate::DockAreaTitleBarPrivate(CDockAreaTitleBar* _public) :
@@ -243,7 +164,7 @@ void DockAreaTitleBarPrivate::createButtons()
 
 	// Undock button
 	UndockButton = new CTitleBarButton(testConfigFlag(CDockManager::DockAreaHasUndockButton));
-	UndockButton->setObjectName("undockButton");
+	UndockButton->setObjectName("detachGroupButton");
 	UndockButton->setAutoRaise(true);
 	internal::setToolTip(UndockButton, QObject::tr("Detach Group"));
 	internal::setButtonIcon(UndockButton, QStyle::SP_TitleBarNormalButton, ads::DockAreaUndockIcon);
@@ -253,7 +174,7 @@ void DockAreaTitleBarPrivate::createButtons()
 
 	// Close button
 	CloseButton = new CTitleBarButton(testConfigFlag(CDockManager::DockAreaHasCloseButton));
-	CloseButton->setObjectName("closeButton");
+	CloseButton->setObjectName("dockAreaCloseButton");
 	CloseButton->setAutoRaise(true);
 	internal::setButtonIcon(CloseButton, QStyle::SP_TitleBarCloseButton, ads::DockAreaCloseIcon);
 	if (testConfigFlag(CDockManager::DockAreaCloseButtonClosesTab))
@@ -293,7 +214,7 @@ IFloatingWidget* DockAreaTitleBarPrivate::makeAreaFloating(const QPoint& Offset,
 {
 	QSize Size = DockArea->size();
 	this->DragState = DragState;
-	bool OpaqueUndocking = CDockManager::configFlags().testFlag(CDockManager::OpaqueUndocking) ||
+	bool OpaqueUndocking = CDockManager::testConfigFlag(CDockManager::OpaqueUndocking) ||
 		(DraggingFloatingWidget != DragState);
 	CFloatingDockContainer* FloatingDockContainer = nullptr;
 	IFloatingWidget* FloatingWidget;
@@ -349,6 +270,8 @@ CDockAreaTitleBar::CDockAreaTitleBar(CDockAreaWidget* parent) :
 	d->createTabBar();
 	d->Layout->addWidget(new CSpacerWidget(this));
 	d->createButtons();
+
+    setFocusPolicy(Qt::NoFocus);
 }
 
 
@@ -460,7 +383,7 @@ void CDockAreaTitleBar::onTabsMenuActionTriggered(QAction* Action)
 {
 	int Index = Action->data().toInt();
 	d->TabBar->setCurrentIndex(Index);
-	emit tabBarClicked(Index);
+	Q_EMIT tabBarClicked(Index);
 }
 
 
@@ -546,6 +469,12 @@ void CDockAreaTitleBar::mousePressEvent(QMouseEvent* ev)
 		ev->accept();
 		d->DragStartMousePos = ev->pos();
 		d->DragState = DraggingMousePressed;
+
+		if (CDockManager::testConfigFlag(CDockManager::FocusHighlighting))
+		{
+			//d->TabBar->currentTab()->setFocus(Qt::OtherFocusReason);
+			d->dockManager()->dockFocusController()->setDockWidgetTabFocused(d->TabBar->currentTab());
+		}
 		return;
 	}
 	Super::mousePressEvent(ev);
@@ -566,6 +495,7 @@ void CDockAreaTitleBar::mouseReleaseEvent(QMouseEvent* ev)
 		{
 			d->FloatingWidget->finishDragging();
 		}
+
 		return;
 	}
 	Super::mouseReleaseEvent(ev);
@@ -589,7 +519,7 @@ void CDockAreaTitleBar::mouseMoveEvent(QMouseEvent* ev)
         return;
     }
 
-	// If this is the last dock area in a dock container it does not make
+	// If this is the last dock area in a floating dock container it does not make
 	// sense to move it to a new floating widget and leave this one
 	// empty
 	if (d->DockArea->dockContainer()->isFloating()
@@ -612,7 +542,7 @@ void CDockAreaTitleBar::mouseMoveEvent(QMouseEvent* ev)
 	int DragDistance = (d->DragStartMousePos - ev->pos()).manhattanLength();
 	if (DragDistance >= CDockManager::startDragDistance())
 	{
-        ADS_PRINT("CTabsScrollArea::startFloating");
+        ADS_PRINT("CDockAreaTitlBar::startFloating");
 		d->startFloating(d->DragStartMousePos);
 		auto Overlay = d->DockArea->dockManager()->containerOverlay();
 		Overlay->setAllowedAreas(OuterDockAreas);
@@ -651,12 +581,12 @@ void CDockAreaTitleBar::contextMenuEvent(QContextMenuEvent* ev)
 	}
 
 	QMenu Menu(this);
-	auto Action = Menu.addAction(tr("Detach Area"), this, SLOT(onUndockButtonClicked()));
+	auto Action = Menu.addAction(tr("Detach Group"), this, SLOT(onUndockButtonClicked()));
 	Action->setEnabled(d->DockArea->features().testFlag(CDockWidget::DockWidgetFloatable));
 	Menu.addSeparator();
-	Action = Menu.addAction(tr("Close Area"), this, SLOT(onCloseButtonClicked()));
+	Action = Menu.addAction(tr("Close Group"), this, SLOT(onCloseButtonClicked()));
 	Action->setEnabled(d->DockArea->features().testFlag(CDockWidget::DockWidgetClosable));
-	Menu.addAction(tr("Close Other Areas"), d->DockArea, SLOT(closeOtherAreas()));
+	Menu.addAction(tr("Close Other Groups"), d->DockArea, SLOT(closeOtherAreas()));
 	Menu.exec(ev->globalPos());
 }
 
@@ -674,10 +604,51 @@ int CDockAreaTitleBar::indexOf(QWidget *widget) const
 	return d->Layout->indexOf(widget);
 }
 
+//============================================================================
+CTitleBarButton::CTitleBarButton(bool visible, QWidget* parent)
+	: tTitleBarButton(parent),
+	  Visible(visible),
+	  HideWhenDisabled(CDockManager::testConfigFlag(CDockManager::DockAreaHideDisabledButtons))
+{
+    setFocusPolicy(Qt::NoFocus);
+}
+
+//============================================================================
+void CTitleBarButton::setVisible(bool visible)
+{
+	// 'visible' can stay 'true' if and only if this button is configured to generaly visible:
+	visible = visible && this->Visible;
+
+	// 'visible' can stay 'true' unless: this button is configured to be invisible when it is disabled and it is currently disabled:
+	if (visible && HideWhenDisabled)
+	{
+		visible = isEnabled();
+	}
+
+	Super::setVisible(visible);
+}
+
+//============================================================================
+bool CTitleBarButton::event(QEvent *ev)
+{
+	if (QEvent::EnabledChange == ev->type() && HideWhenDisabled)
+	{
+		// force setVisible() call 
+		// Calling setVisible() directly here doesn't work well when button is expected to be shown first time
+		QMetaObject::invokeMethod(this, "setVisible", Qt::QueuedConnection, Q_ARG(bool, isEnabled()));
+	}
+
+	return Super::event(ev);
+}
+
+//============================================================================
+CSpacerWidget::CSpacerWidget(QWidget* Parent /*= 0*/) : Super(Parent)
+{
+	setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+	setStyleSheet("border: none; background: none;");
+}
 
 } // namespace ads
-
-#include "DockAreaTitleBar.moc"
 
 //---------------------------------------------------------------------------
 // EOF DockAreaTitleBar.cpp

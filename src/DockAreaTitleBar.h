@@ -34,7 +34,7 @@
 
 #include "ads_globals.h"
 
-class QAbstractButton;
+QT_FORWARD_DECLARE_CLASS(QAbstractButton)
 
 namespace ads
 {
@@ -54,7 +54,7 @@ private:
 	DockAreaTitleBarPrivate* d; ///< private data (pimpl)
 	friend struct DockAreaTitleBarPrivate;
 
-private slots:
+private Q_SLOTS:
 	void onTabsMenuAboutToShow();
 	void onCloseButtonClicked();
 	void onUndockButtonClicked();
@@ -86,9 +86,9 @@ protected:
 	/**
 	 * Show context menu
 	 */
-	virtual void contextMenuEvent(QContextMenuEvent *event);
+	virtual void contextMenuEvent(QContextMenuEvent *event) override;
 
-public slots:
+public Q_SLOTS:
 	/**
 	 * Call this slot to tell the title bar that it should update the tabs menu
 	 * the next time it is shown.
@@ -148,13 +148,14 @@ public:
 	 */
 	int indexOf(QWidget *widget) const;
 
-signals:
+Q_SIGNALS:
 	/**
 	 * This signal is emitted if a tab in the tab bar is clicked by the user
 	 * or if the user clicks on a tab item in the title bar tab menu.
 	 */
 	void tabBarClicked(int index);
 }; // class name
+
 }
  // namespace ads
 //-----------------------------------------------------------------------------

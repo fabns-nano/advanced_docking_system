@@ -23,7 +23,8 @@ windows {
 	}
 	# MSVC
 	*-msvc* {
-	}
+                QMAKE_CXXFLAGS += /utf-8
+        }
 }
 
 RESOURCES += ads.qrc
@@ -41,10 +42,12 @@ HEADERS += \
     FloatingDragPreview.h \
     DockOverlay.h \
     DockSplitter.h \
+    DockAreaTitleBar_p.h \
     DockAreaTitleBar.h \
     ElidingLabel.h \
     IconProvider.h \
-    DockComponentsFactory.h 
+    DockComponentsFactory.h  \
+    DockFocusController.h
 
 
 SOURCES += \
@@ -63,16 +66,19 @@ SOURCES += \
     DockAreaTitleBar.cpp \
     ElidingLabel.cpp \
     IconProvider.cpp \
-    DockComponentsFactory.cpp
+    DockComponentsFactory.cpp \
+    DockFocusController.cpp
 
 
-unix {
+unix:!macx {
 HEADERS += linux/FloatingWidgetTitleBar.h
 SOURCES += linux/FloatingWidgetTitleBar.cpp
+LIBS += -lxcb
+QT += gui-private
 }
 
 isEmpty(PREFIX){
-	PREFIX=..\installed
+	PREFIX=../installed
 	warning("Install Prefix not set")
 }
 headers.path=$$PREFIX/include

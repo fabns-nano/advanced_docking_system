@@ -193,7 +193,7 @@ void DockManagerPrivate::loadStylesheet()
 #ifdef Q_OS_LINUX
     FileName += "_linux";
 #endif
-    FileName += ".css";
+    FileName += ".qss";
 	QFile StyleSheetFile(FileName);
 	StyleSheetFile.open(QIODevice::ReadOnly);
 	QTextStream StyleSheetStream(&StyleSheetFile);

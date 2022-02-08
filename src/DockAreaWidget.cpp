@@ -74,6 +74,7 @@ private:
 	QBoxLayout* m_ParentLayout;
 	QList<QWidget*> m_Widgets;
 	int m_CurrentIndex = -1;
+	int m_PreviousIndex = -1;
 	QWidget* m_CurrentWidget = nullptr;
 
 public:
@@ -114,6 +115,7 @@ public:
 		{
 			if (index <= m_CurrentIndex )
 			{
+				m_PreviousIndex = m_CurrentIndex;
 				++m_CurrentIndex;
 			}
 		}
@@ -182,6 +184,7 @@ public:
 		{
 			prev->hide();
 		}
+		m_PreviousIndex = m_CurrentIndex;
 		m_CurrentIndex = index;
 		m_CurrentWidget = next;
 
@@ -198,6 +201,13 @@ public:
 	int currentIndex() const
 	{
 		return m_CurrentIndex;
+	}
+	/**
+	 * Returns the index of the current active widget
+	 */
+	int previousIndex() const
+	{
+		return m_PreviousIndex;
 	}
 
 	/**

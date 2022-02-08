@@ -876,8 +876,11 @@ CDockWidget* CDockAreaWidget::previousSelectedDockWidget() const
 	if (OpenDockWidgets.count() > 1)
 	{
 		auto PreviousIndex = d->ContentsLayout->previousIndex();
-		d->ContentsLayout->setCurrentIndex(PreviousIndex);
-		PreviousDockWidget = currentDockWidget();
+		if (PreviousIndex >= 0 && PreviousIndex < OpenDockWidgets.count())
+		{
+			PreviousDockWidget = !OpenDockWidgets[PreviousIndex]->features().testFlag(CDockWidget::NoTab) ? 
+														OpenDockWidgets[PreviousIndex] : nullptr;
+		}
 	}
 	return PreviousDockWidget;
 }

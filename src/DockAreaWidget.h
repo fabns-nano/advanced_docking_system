@@ -127,7 +127,7 @@ protected:
 	 * The function returns the widget that was previously selected or
 	 * nullptr in case there are no more open widgets in this area.
 	 */
-	CDockWidget* previousSelectedDockWidget(CDockWidget* DockWidget) const;
+	CDockWidget* previousSelectedDockWidget() const;
 
 	/**
 	 * Returns the index of the given DockWidget in the internal layout

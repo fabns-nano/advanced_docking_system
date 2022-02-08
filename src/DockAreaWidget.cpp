@@ -459,7 +459,7 @@ void CDockAreaWidget::removeDockWidget(CDockWidget* DockWidget)
 {
     ADS_PRINT("CDockAreaWidget::removeDockWidget");
     auto CurrentDockWidget = currentDockWidget();
-  	auto NextOpenDockWidget = (DockWidget == CurrentDockWidget) ? previousSelectedDockWidget(DockWidget) : nullptr;
+  	auto NextOpenDockWidget = (DockWidget == CurrentDockWidget) ? previousSelectedDockWidget() : nullptr;
 
 	d->ContentsLayout->removeWidget(DockWidget);
 	auto TabWidget = DockWidget->tabWidget();
@@ -869,7 +869,7 @@ CDockWidget* CDockAreaWidget::nextOpenDockWidget(CDockWidget* DockWidget) const
 }
 
 //============================================================================
-CDockWidget* CDockAreaWidget::previousSelectedDockWidget(CDockWidget* DockWidget) const
+CDockWidget* CDockAreaWidget::previousSelectedDockWidget() const
 {
 	auto OpenDockWidgets = openedDockWidgets();
 	CDockWidget *PreviousDockWidget = nullptr;

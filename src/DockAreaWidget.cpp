@@ -872,9 +872,14 @@ CDockWidget* CDockAreaWidget::nextOpenDockWidget(CDockWidget* DockWidget) const
 CDockWidget* CDockAreaWidget::previousSelectedDockWidget(CDockWidget* DockWidget) const
 {
 	auto OpenDockWidgets = openedDockWidgets();
-	auto PreviousIndex = d->ContentsLayout->previousIndex();
-	d->ContentsLayout->setCurrentIndex(PreviousIndex);
-	return this->currentDockWidget();
+	CDockWidget *PreviousDockWidget = nullptr;
+	if (OpenDockWidgets.count() > 1)
+	{
+		auto PreviousIndex = d->ContentsLayout->previousIndex();
+		d->ContentsLayout->setCurrentIndex(PreviousIndex);
+		PreviousDockWidget = currentDockWidget();
+	}
+	return PreviousDockWidget;
 }
 
 

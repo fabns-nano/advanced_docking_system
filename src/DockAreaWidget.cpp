@@ -140,6 +140,15 @@ public:
 		{
 			--m_CurrentIndex;
 		}
+		
+		if(Widget == widget(m_PreviousIndex))
+		{
+			m_PreviousIndex = -1;
+		}
+		else if (indexOf(Widget) < m_PreviousIndex)
+		{
+			--m_PreviousIndex;
+		}
 		m_Widgets.removeOne(Widget);
 	}
 

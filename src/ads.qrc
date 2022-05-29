@@ -1,6 +1,7 @@
 <RCC>
     <qresource prefix="/ads">
         <file>stylesheets/default.qss</file>
+        <file>stylesheets/default_linux.qss</file>
         <file>images/ads_close.svg</file>
         <file>images/ads_close_disabled.svg</file>
         <file>images/ads_close_over.svg</file>

@@ -1,0 +1,381 @@
+/*===========================================================================
+ * QMainWindow
+ *===========================================================================*/
+QMainWindow::separator 
+{
+  width: 10px;
+}
+
+QMainWindow::separator:hover 
+{
+  background-color:rgb(239, 67, 0);
+}
+
+QMainWindow
+{
+  background: rgb(50, 50, 50);
+}
+
+/*===========================================================================
+ * QSplitter
+ *===========================================================================*/
+
+
+/*===========================================================================
+ * QPushButton
+ *===========================================================================*/
+ 
+
+QPushButton
+{
+    /* border: 1px solid rgb(80, 80, 80); */
+    /*min-height: 12px;*/
+    background-color:#3a3a3a;
+    padding: 5px;
+}
+
+
+QPushButton:enabled {
+	background-color:#4a4a4a;
+}
+
+/* QPushButton:focus
+{
+    border-color: palette(highlight);
+} */
+
+QPushButton:hover:enabled
+{
+  background-color:#636363;
+}
+
+QPushButton:pressed
+{
+    background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
+                                      stop:0 rgb(60, 60, 60), 
+                                      stop:1 rgb(70, 70, 70));
+    color: palette(highlight);
+    border-color: rgb(80, 80, 80);
+}
+
+QPushButton:checked {
+  background-color: rgb(37,119,226);
+}
+
+QPushButton:checked:hover
+{
+  background-color: rgb(3,100,226);
+}
+
+
+/*===========================================================================
+ * QToolButton
+ *===========================================================================*/
+QToolButton
+{
+  padding: 0.2em;
+}
+
+
+QToolButton, ExclusiveUnselButton {
+	background-color:#3a3a3a;
+}
+
+QToolButton[vsmall="true"]
+{
+	padding: 0px;
+	padding-left: 3px;
+	padding-right: 3px;
+}
+ 
+ 
+QToolButton:hover
+{
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
+                    stop:0 rgb(55, 55, 55), 
+                    stop:1 rgb(44, 44, 44));
+}
+
+QToolButton:hover:enabled
+{
+  background-color:#636363;
+}
+
+QToolButton:pressed
+{
+    background-color: rgb(80, 80, 80);
+    color: palette(highlight);
+    border-color: rgb(80, 80, 80);
+}
+
+QToolButton:checked {
+  background-color: rgb(37,119,226);
+}
+
+QToolButton:checked:hover
+{
+  background-color: rgb(3,100,226);
+}
+
+QToolButton[popupMode="1"] { /* only for MenuButtonPopup */
+    padding-right: 17px; /* make way for the popup button */
+}
+
+
+QToolButton::menu-button {
+    border-left: 1px solid transparent;
+    /* 15px width + 1px for border = 16px allocated above */
+    width: 15px;
+}
+
+QToolButton::menu-button:hover {
+    border-left: 1px solid rgb(80, 80, 80);
+}
+
+
+QToolButton::menu-arrow {
+    /* image: url(:/metro/images/toolbutton_down_arrow.png); */
+    width: 9px;
+    height: 9px;
+}
+
+QToolButton::menu-arrow:hover,
+QToolButton::menu-arrow:hover:open
+{
+    /* image: url(:/metro/images/toolbutton_down_arrow_active.png); */
+}
+
+
+QToolButton::menu-arrow:open {
+    top: 1px; left: 1px;
+}
+
+QToolButton:enabled,  ExclusiveUnselButton:enabled {
+	background-color:#4a4a4a;
+}
+
+QToolButton:hover:enabled, ExclusiveUnselButton:hover:enabled {
+	background-color:#636363;
+}
+
+
+/*===========================================================================
+* QtAdvancedDockingSystem
+*===========================================================================*/
+
+ads--CDockContainerWidget
+{
+	background: rgb(31, 31, 31);
+} 
+
+ads--CDockManager
+{
+	padding: 6px;
+}
+
+/* box que envolve todo widget */
+ads--CDockAreaWidget
+{
+  background: rgb(50, 50, 50);
+  margin: 3px 3px 3px 3px;
+  /* border:3px solid #ffff00;
+  margin: 20px 20px 20px 20px; */
+}
+
+ads--CDockAreaTitleBar
+{
+	background: rgb(80, 80, 80);
+	border-bottom: 2px solid palette(Highlight);
+	min-height: 25px;
+}
+
+/* ads--CDockAreaTitleBar:disabled
+{
+	border-bottom: 1px solid rgb(140, 140, 140);
+} */
+
+ads--CDockAreaTitleBar > QToolButton
+{
+	background: rgb(80, 80, 80);
+	padding: 3px 2px;
+}
+
+ads--CDockAreaTitleBar > QToolButton:hover
+{
+	background: rgb(91, 91, 91);
+}
+
+ads--CDockAreaTitleBar > QToolButton:pressed
+{
+	border: 1px solid palette(Highlight);
+	background: rgba(255, 196, 125, 127);
+}
+
+ads--CDockAreaTabBar
+{
+
+}
+
+ads--CDockWidgetTab
+{
+  background-color: rgb(80, 80, 80);
+  padding: 2px 3px 2px 3px;
+  border-top-left-radius:7px;
+  border-top-right-radius:7px;
+  margin:3px 0px 0px 3px;
+}
+
+ads--CDockWidgetTab > QLabel
+{
+  color: #9a9a9a;
+}
+
+ads--CDockWidgetTab[activeTab="false"]
+{
+	background: rgb(50, 50, 50);
+	/* border-right: 1px solid rgb(50, 50, 50); */
+}
+
+ads--CDockWidgetTab:hover {
+  background: rgb(230, 106, 58);
+  color: rgb(255, 255, 255);
+}
+
+ads--CDockWidgetTab:hover > QLabel {
+  color: rgb(255, 255, 255);
+}
+
+ads--CDockWidgetTab[activeTab="true"]
+{
+	background: palette(Highlight);
+}
+
+ads--CDockWidgetTab[activeTab="true"]:disabled
+{
+	background: rgb(140, 140, 140);
+}
+
+ads--CDockWidgetTab[activeTab="true"] #dockWidgetTabLabel
+{
+	color: rgb(255, 255, 255);
+}
+
+/* background of the ADS tabs */
+QWidget#tabsContainerWidget {
+  background: rgb(80, 80, 80);
+}
+
+ads--CDockWidget > QToolBar
+{
+  border-bottom: 1px solid palette(light);
+}
+
+ads--CDockWidget 
+{
+  background: rgb(50, 50, 50);
+  padding: 0px 0px 0px 0px;
+  margin: 0px;
+}
+
+ads--CDockWidget[ItemViewContainer="true"] QTableView
+{
+	gridline-color: rgb(80, 80, 80);
+	padding-left: -1px;
+	padding-right: -1px;
+	background-color: rgb(46, 46, 46);
+}
+
+ads--CTitleBarButton
+{
+  padding: 0px 0px;
+}
+
+
+/*===========================================================================
+ * QtAdvancedDockingSystem - END
+ *===========================================================================*/
+
+
+/* QScrollArea#dockWidgetScrollArea
+{
+  padding: 0px;
+  border: none;
+} */
+
+/* ADS close tab, close button & detach icons */
+
+/* Undock  */
+#detachGroupButton {
+  background: none;
+  border: none;
+	qproperty-icon: url(:/ads/images/ads_detach.svg),
+		url(:/ads/images/ads_detach_disabled.svg) disabled;
+	qproperty-iconSize: 16px;	
+}
+
+#detachGroupButton:hover
+{
+  border: none;
+  background:palette(Highlight);
+}
+
+/* Close  */
+#tabCloseButton {
+  background: none;
+  border: none;
+	qproperty-icon: url(:/ads/images/ads_close.svg),
+		url(:/ads/images/ads_close_disabled.svg) disabled;
+	qproperty-iconSize: 16px;	
+}
+
+#tabCloseButton:hover
+{
+  background:palette(Highlight);
+}
+
+#tabCloseButton:pressed
+{
+  background:rgba(2, 174, 255, 50);
+}
+
+#dockAreaCloseButton {
+  background: none;
+  border: none;
+	qproperty-icon: url(:/ads/images/ads_close.svg),
+		url(:/ads/images/ads_close_disabled.svg) disabled;
+	qproperty-iconSize: 16px;	
+}
+
+#dockAreaCloseButton:hover
+{
+  background:palette(Highlight);
+}
+
+#dockAreaCloseButton:pressed
+{
+  background:rgba(2, 174, 255, 50);
+}
+
+/* tabs menu button  */
+#tabsMenuButton::menu-indicator
+{
+    image: none;
+}
+
+#tabsMenuButton {
+  background: none;
+  border: none;
+  qproperty-icon: url(:/ads/images/ads_tab_menu.svg),
+		url(:/ads/images/ads_tab_menu_disabled.svg) disabled;
+	qproperty-iconSize: 16px;	
+}
+
+#tabsMenuButton:hover
+{
+  background:palette(Highlight);
+}
+
+#tabsMenuButton:pressed
+{
+  background:rgba(2, 174, 255, 50);
+}

@@ -57,6 +57,8 @@ endif()
 if(BUILD_STATIC)
     add_library(qtadvanceddocking STATIC ${ads_SRCS} ${ads_HEADERS})
     target_compile_definitions(qtadvanceddocking PUBLIC ADS_STATIC)
+    target_compile_options(qtadvanceddocking PUBLIC
+                           $<$<PLATFORM_ID:Linux,Darwin>:-fPIC>)
 else()
     add_library(qtadvanceddocking SHARED ${ads_SRCS} ${ads_HEADERS})
     target_compile_definitions(qtadvanceddocking PRIVATE ADS_SHARED_EXPORT)

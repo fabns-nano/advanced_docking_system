@@ -122,14 +122,6 @@ protected:
 	CDockWidget* nextOpenDockWidget(CDockWidget* DockWidget) const;
 
 	/**
-	 * This is a helper function to get the previously selected widget to activate
-	 * if the currently selected DockWidget will be closed or removed.
-	 * The function returns the widget that was previously selected or
-	 * nullptr in case there are no more open widgets in this area.
-	 */
-	CDockWidget* previousSelectedDockWidget() const;
-
-	/**
 	 * Returns the index of the given DockWidget in the internal layout
 	 */
 	int index(CDockWidget* DockWidget);

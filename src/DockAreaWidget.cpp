@@ -74,7 +74,6 @@ private:
 	QBoxLayout* m_ParentLayout;
 	QList<QWidget*> m_Widgets;
 	int m_CurrentIndex = -1;
-	int m_PreviousIndex = -1;
 	QWidget* m_CurrentWidget = nullptr;
 
 public:
@@ -115,7 +114,6 @@ public:
 		{
 			if (index <= m_CurrentIndex )
 			{
-				m_PreviousIndex = m_CurrentIndex;
 				++m_CurrentIndex;
 			}
 		}
@@ -139,15 +137,6 @@ public:
 		else if (indexOf(Widget) < m_CurrentIndex)
 		{
 			--m_CurrentIndex;
-		}
-		
-		if(Widget == widget(m_PreviousIndex))
-		{
-			m_PreviousIndex = -1;
-		}
-		else if (indexOf(Widget) < m_PreviousIndex)
-		{
-			--m_PreviousIndex;
 		}
 		m_Widgets.removeOne(Widget);
 	}
@@ -193,7 +182,6 @@ public:
 		{
 			prev->hide();
 		}
-		m_PreviousIndex = m_CurrentIndex;
 		m_CurrentIndex = index;
 		m_CurrentWidget = next;
 
@@ -210,13 +198,6 @@ public:
 	int currentIndex() const
 	{
 		return m_CurrentIndex;
-	}
-	/**
-	 * Returns the index of the current active widget
-	 */
-	int previousIndex() const
-	{
-		return m_PreviousIndex;
 	}
 
 	/**
@@ -468,7 +449,7 @@ void CDockAreaWidget::removeDockWidget(CDockWidget* DockWidget)
 {
     ADS_PRINT("CDockAreaWidget::removeDockWidget");
     auto CurrentDockWidget = currentDockWidget();
-  	auto NextOpenDockWidget = (DockWidget == CurrentDockWidget) ? previousSelectedDockWidget() : nullptr;
+  	auto NextOpenDockWidget = (DockWidget == CurrentDockWidget) ? nextOpenDockWidget(DockWidget) : nullptr;
 
 	d->ContentsLayout->removeWidget(DockWidget);
 	auto TabWidget = DockWidget->tabWidget();
@@ -875,23 +856,6 @@ CDockWidget* CDockAreaWidget::nextOpenDockWidget(CDockWidget* DockWidget) const
 	{
 		return nullptr;
 	}
-}
-
-//============================================================================
-CDockWidget* CDockAreaWidget::previousSelectedDockWidget() const
-{
-	auto OpenDockWidgets = openedDockWidgets();
-	CDockWidget *PreviousDockWidget = nullptr;
-	if (OpenDockWidgets.count() > 1)
-	{
-		auto PreviousIndex = d->ContentsLayout->previousIndex();
-		if (PreviousIndex >= 0 && PreviousIndex < OpenDockWidgets.count())
-		{
-			PreviousDockWidget = !OpenDockWidgets[PreviousIndex]->features().testFlag(CDockWidget::NoTab) ? 
-														OpenDockWidgets[PreviousIndex] : nullptr;
-		}
-	}
-	return PreviousDockWidget;
 }
 
 

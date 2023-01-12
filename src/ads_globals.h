@@ -69,6 +69,7 @@ QT_FORWARD_DECLARE_CLASS(QSplitter)
 
 namespace ads
 {
+Q_NAMESPACE
 class CDockSplitter;
 
 enum DockWidgetArea
@@ -91,7 +92,8 @@ enum TitleBarButton
 {
 	TitleBarButtonTabsMenu,
 	TitleBarButtonUndock,
-	TitleBarButtonClose
+	TitleBarButtonClose,
+	TitleBarButtonAutoHide
 };
 
 /**
@@ -111,6 +113,7 @@ enum eDragState
 enum eIcon
 {
 	TabCloseIcon,      //!< TabCloseIcon
+	AutoHideIcon,      //!< AutoHideIcon
 	DockAreaMenuIcon,  //!< DockAreaMenuIcon
 	DockAreaUndockIcon,//!< DockAreaUndockIcon
 	DockAreaCloseIcon, //!< DockAreaCloseIcon
@@ -128,12 +131,55 @@ enum eBitwiseOperator
 };
 
 
+/**
+ * Each dock container supports 4 sidebars
+ */
+enum SideBarLocation
+{
+	SideBarTop,
+	SideBarLeft,
+	SideBarRight,
+	SideBarBottom,
+	SideBarNone
+};
+Q_ENUMS(SideBarLocation);
+
+
 namespace internal
 {
 static const bool RestoreTesting = true;
 static const bool Restore = false;
 static const char* const ClosedProperty = "close";
 static const char* const DirtyProperty = "dirty";
+extern const int FloatingWidgetDragStartEvent;
+extern const int DockedWidgetDragStartEvent;
+
+#ifdef Q_OS_LINUX
+// Utils to directly communicate with the X server
+/**
+ * Get atom from cache or request it from the XServer.
+ */
+xcb_atom_t xcb_get_atom(const char *name);
+
+/**
+ * Add a property to a window. Only works on "hidden" windows.
+ */
+void xcb_add_prop(bool state, WId window, const char *type, const char *prop);
+/**
+ * Updates up to two window properties. Can be set on a visible window.
+ */
+void xcb_update_prop(bool set, WId window, const char *type, const char *prop, const char *prop2 = nullptr);
+/**
+ * Only for debugging purposes.
+ */
+bool xcb_dump_props(WId window, const char *type);
+/**
+ * Gets the active window manager from the X11 Server.
+ * Requires a EWMH conform window manager (Allmost all common used ones are).
+ * Returns "UNKNOWN" otherwise.
+ */
+QString windowManager();
+#endif
 
 #ifdef Q_OS_LINUX
 // Utils to directly communicate with the X server
@@ -305,8 +351,14 @@ enum eRepolishChildOptions
 void repolishStyle(QWidget* w, eRepolishChildOptions Options = RepolishIgnoreChildren);
 
 
+/**
+ * Returns the geometry of the given widget in global space
+ */
+QRect globalGeometry(QWidget* w);
+
 } // namespace internal
 } // namespace ads
 
+Q_DECLARE_OPERATORS_FOR_FLAGS(ads::DockWidgetAreas)
 //---------------------------------------------------------------------------
 #endif // ads_globalsH

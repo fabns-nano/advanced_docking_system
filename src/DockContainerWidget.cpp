@@ -2005,12 +2005,6 @@ void CDockContainerWidget::removeAutoHideWidget(CAutoHideDockContainer* Autohide
 	d->AutoHideWidgets.removeAll(AutohideWidget);
 }
 
-//============================================================================
-void CDockContainerWidget::updateSplitterHandles(QSplitter* splitter)
-{
-    d->updateSplitterHandles(splitter);
-}
-
 
 //============================================================================
 CDockWidget::DockWidgetFeatures CDockContainerWidget::features() const

@@ -192,10 +192,7 @@ xcb_atom_t xcb_get_atom(const char *name);
  * Add a property to a window. Only works on "hidden" windows.
  */
 void xcb_add_prop(bool state, WId window, const char *type, const char *prop);
-/**
- * Updates up to two window properties. Can be set on a visible window.
- */
-void xcb_update_prop(bool set, WId window, const char *type, const char *prop, const char *prop2 = nullptr);
+
 /**
  * Only for debugging purposes.
  */

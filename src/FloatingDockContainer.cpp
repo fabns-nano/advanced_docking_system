@@ -373,6 +373,7 @@ struct FloatingDockContainerPrivate
 	CDockAreaWidget *SingleDockArea = nullptr;
 	QPoint DragStartPos;
 	bool Hiding = false;
+	bool AutoHideChildren = true;
 #ifdef Q_OS_LINUX
     QWidget* MouseEventHandler = nullptr;
     CFloatingWidgetTitleBar* TitleBar = nullptr;
@@ -403,9 +404,22 @@ struct FloatingDockContainerPrivate
 		return StateId == DraggingState;
 	}
 
+	/**
+	 * Sets the dragging state and posts a FloatingWidgetDragStartEvent
+	 * if dragging starts
+	 */
 	void setState(eDragState StateId)
 	{
+		if (DraggingState == StateId)
+		{
+			return;
+		}
+
 		DraggingState = StateId;
+        if (DraggingFloatingWidget == DraggingState)
+        {
+            qApp->postEvent(_this, new QEvent((QEvent::Type)internal::FloatingWidgetDragStartEvent));
+        }
 	}
 
 	void setWindowTitle(const QString &Text)
@@ -432,7 +446,7 @@ struct FloatingDockContainerPrivate
 		}
 		else
 		{
-			setWindowTitle(qApp->applicationDisplayName());
+			setWindowTitle(floatingContainersTitle());
 		}
 
 		// reflect CurrentWidget's icon if configured to do so, otherwise display application icon as window icon
@@ -452,6 +466,18 @@ struct FloatingDockContainerPrivate
 	 * Handles escape key press when dragging around the floating widget
 	 */
 	void handleEscapeKey();
+
+	/**
+	 * Returns the title used by all FloatingContainer that does not
+	 * reflect the title of the current dock widget.
+	 *
+	 * If not title was set with CDockManager::setFloatingContainersTitle(),
+	 * it returns QGuiApplication::applicationDisplayName().
+	 */
+	static QString floatingContainersTitle()
+	{
+		return CDockManager::floatingContainersTitle();
+	}
 };
 // struct FloatingDockContainerPrivate
 
@@ -513,6 +539,15 @@ void FloatingDockContainerPrivate::updateDropOverlays(const QPoint &GlobalPos)
 	{
 		return;
 	}
+
+#ifdef Q_OS_LINUX
+	// Prevent display of drop overlays and docking as long as a model dialog
+	// is active
+    if (qApp->activeModalWidget())
+    {
+        return;
+    }
+#endif
 
 	auto Containers = DockManager->dockContainers();
 	CDockContainerWidget *TopContainer = nullptr;
@@ -801,29 +836,43 @@ void CFloatingDockContainer::closeEvent(QCloseEvent *event)
 	ADS_PRINT("CFloatingDockContainer closeEvent");
 	d->setState(DraggingInactive);
 	event->ignore();
-
-	if (isClosable())
+	if (!isClosable())
 	{
-		auto TopLevelDockWidget = topLevelDockWidget();
-		if (TopLevelDockWidget && TopLevelDockWidget->features().testFlag(CDockWidget::DockWidgetDeleteOnClose))
+		return;
+	}
+
+	bool HasOpenDockWidgets = false;
+	for (auto DockWidget : d->DockContainer->openedDockWidgets())
+	{
+		if (DockWidget->features().testFlag(CDockWidget::DockWidgetDeleteOnClose) || DockWidget->features().testFlag(CDockWidget::CustomCloseHandling))
 		{
-			if (!TopLevelDockWidget->closeDockWidgetInternal())
+			bool Closed = DockWidget->closeDockWidgetInternal();
+			if (!Closed)
 			{
-				return;
+				HasOpenDockWidgets = true;
 			}
 		}
-
-		// In Qt version after 5.9.2 there seems to be a bug that causes the
-		// QWidget::event() function to not receive any NonClientArea mouse
-		// events anymore after a close/show cycle. The bug is reported here:
-		// https://bugreports.qt.io/browse/QTBUG-73295
-		// The following code is a workaround for Qt versions > 5.9.2 that seems
-		// to work
-		// Starting from Qt version 5.12.2 this seems to work again. But
-		// now the QEvent::NonClientAreaMouseButtonPress function returns always
-		// Qt::RightButton even if the left button was pressed
-        this->hide();
+		else
+		{
+			DockWidget->toggleView(false);
+		}
 	}
+
+	if (HasOpenDockWidgets)
+	{
+		return;
+	}
+
+	// In Qt version after 5.9.2 there seems to be a bug that causes the
+	// QWidget::event() function to not receive any NonClientArea mouse
+	// events anymore after a close/show cycle. The bug is reported here:
+	// https://bugreports.qt.io/browse/QTBUG-73295
+	// The following code is a workaround for Qt versions > 5.9.2 that seems
+	// to work
+	// Starting from Qt version 5.12.2 this seems to work again. But
+	// now the QEvent::NonClientAreaMouseButtonPress function returns always
+	// Qt::RightButton even if the left button was pressed
+	this->hide();
 }
 
 //============================================================================
@@ -841,13 +890,17 @@ void CFloatingDockContainer::hideEvent(QHideEvent *event)
         return;
     }
 
-    d->Hiding = true;
-	for (auto DockArea : d->DockContainer->openedDockAreas())
+	if ( d->AutoHideChildren )
 	{
-		for (auto DockWidget : DockArea->openedDockWidgets())
+		d->Hiding = true;
+		for ( auto DockArea : d->DockContainer->openedDockAreas() )
 		{
-			DockWidget->toggleView(false);
+			for ( auto DockWidget : DockArea->openedDockWidgets() )
+			{
+				DockWidget->toggleView( false );
+			}
 		}
+		d->Hiding = false;
 	}
 	d->Hiding = false;
 }
@@ -958,7 +1011,7 @@ void CFloatingDockContainer::onDockAreasAddedOrRemoved()
 			    SLOT(onDockAreaCurrentChanged(int)));
 			d->SingleDockArea = nullptr;
 		}
-		d->setWindowTitle(qApp->applicationDisplayName());
+		d->setWindowTitle(d->floatingContainersTitle());
 		setWindowIcon(QApplication::windowIcon());
 	}
 }
@@ -985,7 +1038,7 @@ void CFloatingDockContainer::updateWindowTitle()
 	}
 	else
 	{
-		d->setWindowTitle(qApp->applicationDisplayName());
+		d->setWindowTitle(d->floatingContainersTitle());
 		setWindowIcon(QApplication::windowIcon());
 	}
 }
@@ -1033,6 +1086,18 @@ CDockWidget* CFloatingDockContainer::topLevelDockWidget() const
 QList<CDockWidget*> CFloatingDockContainer::dockWidgets() const
 {
 	return d->DockContainer->dockWidgets();
+}
+
+//============================================================================
+void CFloatingDockContainer::hideAndDeleteLater()
+{
+	// Widget has been redocked, so it must be hidden right way (see 
+	// https://github.com/githubuser0xFFFF/Qt-Advanced-Docking-System/issues/351)
+	// but AutoHideChildren must be set to false because "this" still contains
+	// dock widgets that shall not be toggled hidden.
+	d->AutoHideChildren = false;
+	hide();
+	deleteLater();
 }
 
 //============================================================================
@@ -1223,19 +1288,37 @@ void CFloatingDockContainer::resizeEvent(QResizeEvent *event)
 	Super::resizeEvent(event);
 }
 
-
+static bool s_mousePressed = false;
 //============================================================================
 void CFloatingDockContainer::moveEvent(QMoveEvent *event)
 {
 	Super::moveEvent(event);
-	if (!d->IsResizing && event->spontaneous())
+	if (!d->IsResizing && event->spontaneous() && s_mousePressed)
 	{
-		d->DraggingState = DraggingFloatingWidget;
+        d->setState(DraggingFloatingWidget);
 		d->updateDropOverlays(QCursor::pos());
 	}
 	d->IsResizing = false;
 }
 
+
+//============================================================================
+bool CFloatingDockContainer::event(QEvent *e)
+{
+	bool result = Super::event(e);
+	switch (e->type())
+	{
+	case QEvent::WindowActivate:
+		s_mousePressed = false;
+		break;
+	case QEvent::WindowDeactivate:
+		s_mousePressed = true;
+		break;
+	default:
+		break;
+	}
+	return result;
+}
 
 //============================================================================
 bool CFloatingDockContainer::hasNativeTitleBar()

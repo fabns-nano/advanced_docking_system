@@ -158,6 +158,13 @@ QToolButton:hover:enabled, ExclusiveUnselButton:hover:enabled {
 	background-color:#636363;
 }
 
+/*===========================================================================
+ * QToolTip
+ *===========================================================================*/
+
+QToolTip{
+  background-color: rgb(60, 60, 60);
+}
 
 /*===========================================================================
 * QtAdvancedDockingSystem

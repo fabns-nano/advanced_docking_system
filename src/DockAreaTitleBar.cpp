@@ -215,6 +215,7 @@ void DockAreaTitleBarPrivate::createButtons()
 	AutoHideButton->setSizePolicy(ButtonSizePolicy);
 	AutoHideButton->setCheckable(testAutoHideConfigFlag(CDockManager::AutoHideButtonCheckable));
 	AutoHideButton->setChecked(false);
+	AutoHideButton->setVisible(false);
 	Layout->addWidget(AutoHideButton, 0);
 	_this->connect(AutoHideButton, SIGNAL(clicked()),  SLOT(onAutoHideButtonClicked()));
 

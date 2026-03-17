@@ -201,11 +201,12 @@ void DockManagerPrivate::loadStylesheet()
 #endif
   FileName += ".qss";
 	QFile StyleSheetFile(FileName);
-	StyleSheetFile.open(QIODevice::ReadOnly);
-	QTextStream StyleSheetStream(&StyleSheetFile);
-	Result = StyleSheetStream.readAll();
-	StyleSheetFile.close();
-	_this->setStyleSheet(Result);
+	  if(StyleSheetFile.open(QIODevice::ReadOnly)) {
+	  QTextStream StyleSheetStream(&StyleSheetFile);
+	  Result = StyleSheetStream.readAll();
+	  StyleSheetFile.close();
+	  _this->setStyleSheet(Result);
+  }
 }
 
 
@@ -628,7 +629,11 @@ bool CDockManager::eventFilter(QObject *obj, QEvent *e)
 		}
 		if (!window()->isMinimized())
 		{
+#if Q_VERSION < QT_VERSION_CHECK(6,5,0)
+      window()->activateWindow();
+#else
 			QApplication::setActiveWindow(window());
+#endif
 		}
 	}
 	return Super::eventFilter(obj, e);

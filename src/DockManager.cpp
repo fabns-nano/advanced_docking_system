@@ -201,11 +201,12 @@ void DockManagerPrivate::loadStylesheet()
 #endif
   FileName += ".qss";
 	QFile StyleSheetFile(FileName);
-	StyleSheetFile.open(QIODevice::ReadOnly);
-	QTextStream StyleSheetStream(&StyleSheetFile);
-	Result = StyleSheetStream.readAll();
-	StyleSheetFile.close();
-	_this->setStyleSheet(Result);
+	  if(StyleSheetFile.open(QIODevice::ReadOnly)) {
+	  QTextStream StyleSheetStream(&StyleSheetFile);
+	  Result = StyleSheetStream.readAll();
+	  StyleSheetFile.close();
+	  _this->setStyleSheet(Result);
+  }
 }
 
 

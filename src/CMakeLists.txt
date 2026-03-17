@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 3.10)
 project(QtAdvancedDockingSystem LANGUAGES CXX VERSION ${VERSION_SHORT})
+set(QT_NO_PRIVATE_MODULE_WARNING ON)
 find_package(QT NAMES Qt6 Qt5 COMPONENTS Core REQUIRED)
-find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Core Gui Widgets REQUIRED)
+find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Core Gui GuiPrivate Widgets REQUIRED)
 if (UNIX AND NOT APPLE)
     include_directories(${Qt${QT_VERSION_MAJOR}Gui_PRIVATE_INCLUDE_DIRS})
 endif()
@@ -76,6 +77,7 @@ add_library(ads::qtadvanceddocking ALIAS qtadvanceddocking)
 
 target_link_libraries(qtadvanceddocking PUBLIC Qt${QT_VERSION_MAJOR}::Core 
                                                Qt${QT_VERSION_MAJOR}::Gui 
+                                               Qt${QT_VERSION_MAJOR}::GuiPrivate
                                                Qt${QT_VERSION_MAJOR}::Widgets)
 if (UNIX AND NOT APPLE)
   target_link_libraries(qtadvanceddocking PUBLIC xcb)

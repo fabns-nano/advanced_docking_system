@@ -629,10 +629,10 @@ bool CDockManager::eventFilter(QObject *obj, QEvent *e)
 		}
 		if (!window()->isMinimized())
 		{
-#if Q_VERSION < QT_VERSION_CHECK(6,5,0)
-      window()->activateWindow();
-#else
+#if QT_VERSION < QT_VERSION_CHECK(6,5,0)
 			QApplication::setActiveWindow(window());
+#else
+			window()->activateWindow();
 #endif
 		}
 	}

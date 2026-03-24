@@ -1,14 +1,23 @@
 cmake_minimum_required(VERSION 3.10)
 project(QtAdvancedDockingSystem LANGUAGES CXX VERSION ${VERSION_SHORT})
+
 find_package(QT NAMES Qt6 Qt5 COMPONENTS Core REQUIRED)
-find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Core Gui Widgets REQUIRED)
+if(Qt${QT_VERSION_MAJOR}_VERSION VERSION_GREATER_EQUAL "6.9")
+    find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Core Gui GuiPrivate Widgets REQUIRED)
+else()
+    find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Core Gui Widgets REQUIRED)
+endif()
+
 if (UNIX AND NOT APPLE)
     include_directories(${Qt${QT_VERSION_MAJOR}Gui_PRIVATE_INCLUDE_DIRS})
 endif()
+
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
 if(BUILD_STATIC)
     set(CMAKE_STATIC_LIBRARY_SUFFIX "_static${CMAKE_STATIC_LIBRARY_SUFFIX}")
 endif()
+
 set(ads_SRCS
     ads_globals.cpp
     DockAreaTabBar.cpp

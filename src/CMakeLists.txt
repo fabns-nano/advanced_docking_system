@@ -1,7 +1,9 @@
 cmake_minimum_required(VERSION 3.10)
 project(QtAdvancedDockingSystem LANGUAGES CXX VERSION ${VERSION_SHORT})
 set(QT_NO_PRIVATE_MODULE_WARNING ON)
-find_package(QT NAMES Qt6 Qt5 COMPONENTS Core REQUIRED)
+if(NOT APPLE)
+  find_package(QT NAMES Qt6 Qt5 COMPONENTS Core REQUIRED)
+endif()
 if(QT_VERSION_MINOR LESS 10)
   find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Core Gui Widgets REQUIRED)
 else()
@@ -83,7 +85,7 @@ target_link_libraries(qtadvanceddocking PUBLIC
   Qt${QT_VERSION_MAJOR}::Core 
   Qt${QT_VERSION_MAJOR}::Gui 
   Qt${QT_VERSION_MAJOR}::Widgets)
-if (${QT_VERSION_MINOR} GREATER 9)
+if (QT_VERSION_MINOR GREATER 9)
   target_link_libraries(qtadvanceddocking PUBLIC
     Qt${QT_VERSION_MAJOR}::GuiPrivate)
 endif()

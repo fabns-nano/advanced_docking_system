@@ -83,7 +83,7 @@ target_link_libraries(qtadvanceddocking PUBLIC
   Qt${QT_VERSION_MAJOR}::Core 
   Qt${QT_VERSION_MAJOR}::Gui 
   Qt${QT_VERSION_MAJOR}::Widgets)
-if (${QT_VERSION_MINOR} GREATER 9)
+if (QT_VERSION_MINOR GREATER 9)
   target_link_libraries(qtadvanceddocking PUBLIC
     Qt${QT_VERSION_MAJOR}::GuiPrivate)
 endif()
